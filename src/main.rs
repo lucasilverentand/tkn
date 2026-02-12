@@ -2,6 +2,8 @@ mod cmd;
 mod optimizer;
 mod runner;
 mod storage;
+mod tool_config;
+mod transformer;
 mod types;
 
 use clap::{Parser, Subcommand};

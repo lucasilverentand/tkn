@@ -4,6 +4,8 @@ use uuid::Uuid;
 use crate::optimizer;
 use crate::runner;
 use crate::storage::StorageManager;
+use crate::tool_config;
+use crate::transformer;
 use crate::types::{LogEntry, SessionEntry};
 
 pub fn run(args: &[String]) -> i32 {
@@ -13,8 +15,15 @@ pub fn run(args: &[String]) -> i32 {
         return 1;
     }
 
+    // Load tool config and transform command if rules exist
+    let config = tool_config::load_tool_config(&command);
+    let actual_command = match &config {
+        Some(cfg) => transformer::transform_command(&command, cfg),
+        None => command.clone(),
+    };
+
     let ref_id = format!("tkn_{}", &Uuid::new_v4().to_string().replace('-', "")[..8]);
-    let (result, duration_ms) = runner::run_command(&command);
+    let (result, duration_ms) = runner::run_command(&actual_command);
 
     // Combine stdout + stderr for optimization
     let mut raw_output = result.stdout.clone();
@@ -25,7 +34,7 @@ pub fn run(args: &[String]) -> i32 {
         raw_output.extend_from_slice(&result.stderr);
     }
 
-    let optimized = optimizer::run_pipeline(&raw_output, &ref_id);
+    let optimized = optimizer::run_pipeline(&raw_output, &ref_id, config.as_ref());
 
     let storage = StorageManager::new();
     if let Err(e) = storage.init() {

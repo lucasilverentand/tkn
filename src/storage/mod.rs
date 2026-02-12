@@ -21,6 +21,7 @@ impl StorageManager {
     pub fn init(&self) -> std::io::Result<()> {
         fs::create_dir_all(self.logs_dir())?;
         fs::create_dir_all(self.sessions_dir())?;
+        fs::create_dir_all(self.tools_dir())?;
         Ok(())
     }
 
@@ -30,6 +31,10 @@ impl StorageManager {
 
     pub fn sessions_dir(&self) -> PathBuf {
         self.base_dir.join("sessions")
+    }
+
+    pub fn tools_dir(&self) -> PathBuf {
+        self.base_dir.join("tools")
     }
 
     pub fn analytics_path(&self) -> PathBuf {
