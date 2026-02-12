@@ -1,2 +1,6 @@
 [tools]
 rust = "1.90"
+
+[tasks.install]
+description = "Build and install tkn to ~/.cargo/bin"
+run = "cargo install --path . --locked"
