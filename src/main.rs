@@ -23,9 +23,8 @@ enum Commands {
     /// Show analytics and usage statistics
     Stats,
     /// Browse and retrieve command logs
-    Logs {
+    Log {
         /// Reference ID to show full log for
-        #[arg(long)]
         id: Option<String>,
     },
     /// Install or uninstall the Claude Code hook
@@ -54,7 +53,7 @@ fn main() {
             cmd::stats::run();
             0
         }
-        Commands::Logs { id } => {
+        Commands::Log { id } => {
             cmd::logs::run(id.as_deref());
             0
         }

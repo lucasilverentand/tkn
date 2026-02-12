@@ -25,7 +25,7 @@ pub fn run_pipeline(raw: &[u8], ref_id: &str) -> OptimizedOutput {
             optimized.truncate(pos + 1);
         }
         optimized.push_str(&format!(
-            "\n[... truncated. Full output: tkn logs --id {ref_id} ...]"
+            "\n[... truncated. Full output: tkn log {ref_id} ...]"
         ));
     }
 

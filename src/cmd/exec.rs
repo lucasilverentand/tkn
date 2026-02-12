@@ -70,7 +70,7 @@ pub fn run(args: &[String]) -> i32 {
     storage.maybe_auto_cleanup();
 
     // Print header + optimized output
-    eprintln!("[full output: tkn logs --id {ref_id}]");
+    eprintln!("[full output: tkn log {ref_id}]");
 
     if !optimized.content.is_empty() {
         print!("{}", optimized.content);
