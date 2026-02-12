@@ -22,7 +22,7 @@ pub fn run(args: &[String]) -> i32 {
         None => command.clone(),
     };
 
-    let ref_id = format!("tkn_{}", &Uuid::new_v4().to_string().replace('-', "")[..8]);
+    let ref_id = Uuid::new_v4().to_string().replace('-', "")[..8].to_string();
     let (result, duration_ms) = runner::run_command(&actual_command);
 
     // Combine stdout + stderr for optimization
