@@ -70,19 +70,7 @@ pub fn run(args: &[String]) -> i32 {
     storage.maybe_auto_cleanup();
 
     // Print header + optimized output
-    let savings = if optimized.original_bytes > 0 {
-        let saved = optimized
-            .original_bytes
-            .saturating_sub(optimized.optimized_bytes);
-        (saved as f64 / optimized.original_bytes as f64) * 100.0
-    } else {
-        0.0
-    };
-
-    eprintln!(
-        "[tkn:{ref_id} | {} -> {} bytes | saved {:.0}%]",
-        optimized.original_bytes, optimized.optimized_bytes, savings
-    );
+    eprintln!("[full output: tkn logs --id {ref_id}]");
 
     if !optimized.content.is_empty() {
         print!("{}", optimized.content);
