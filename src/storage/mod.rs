@@ -41,4 +41,8 @@ impl StorageManager {
     pub fn analytics_path(&self) -> PathBuf {
         self.base_dir.join("analytics.json")
     }
+
+    pub fn settings_path(&self) -> PathBuf {
+        self.base_dir.join("settings.toml")
+    }
 }

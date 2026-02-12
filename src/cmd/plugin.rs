@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::process::Command;
 
@@ -32,7 +33,7 @@ fn install_builtins(storage: &StorageManager, manifest: &mut PluginManifest) {
     let tools_dir = storage.tools_dir();
     let mut installed = 0;
 
-    for (name, content) in builtin_plugins() {
+    for (bundle, name, content) in builtin_plugins() {
         let path = tools_dir.join(format!("{name}.toml"));
         if path.exists() {
             println!("  skip: {name} (already exists)");
@@ -47,6 +48,7 @@ fn install_builtins(storage: &StorageManager, manifest: &mut PluginManifest) {
         if !manifest.plugins.iter().any(|p| p.name == name) {
             manifest.plugins.push(PluginEntry {
                 name: name.to_string(),
+                bundle: bundle.to_string(),
                 source: PluginSource::Builtin,
                 installed_at: Utc::now(),
             });
@@ -91,12 +93,48 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
     let tools_dir = storage.tools_dir();
     let mut installed = 0;
 
+    // Look for bundle subdirectories first
     if let Ok(entries) = fs::read_dir(&plugins_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().is_some_and(|ext| ext == "toml") {
+            if path.is_dir() {
+                let bundle = entry.file_name().to_string_lossy().to_string();
+                if let Ok(files) = fs::read_dir(&path) {
+                    for file in files.flatten() {
+                        let file_path = file.path();
+                        if file_path.extension().is_some_and(|ext| ext == "toml") {
+                            let stem = file_path.file_stem().unwrap().to_string_lossy();
+                            let name = format!("{bundle}-{stem}");
+                            let dest = tools_dir.join(format!("{name}.toml"));
+
+                            if dest.exists() {
+                                println!("  skip: {name} (already exists)");
+                                continue;
+                            }
+
+                            match fs::copy(&file_path, &dest) {
+                                Ok(_) => {
+                                    if !manifest.plugins.iter().any(|p| p.name == name) {
+                                        manifest.plugins.push(PluginEntry {
+                                            name: name.clone(),
+                                            bundle: bundle.clone(),
+                                            source: PluginSource::Git { url: url.to_string() },
+                                            installed_at: Utc::now(),
+                                        });
+                                    }
+                                    println!("  installed: {name}");
+                                    installed += 1;
+                                }
+                                Err(e) => eprintln!("  error: {name}: {e}"),
+                            }
+                        }
+                    }
+                }
+            } else if path.extension().is_some_and(|ext| ext == "toml") {
+                // Flat plugin files at the top level (backwards compat)
                 let file_name = path.file_name().unwrap().to_string_lossy().to_string();
                 let name = file_name.trim_end_matches(".toml");
+                let bundle = name.split('-').next().unwrap_or(name).to_string();
                 let dest = tools_dir.join(&file_name);
 
                 if dest.exists() {
@@ -109,6 +147,7 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
                         if !manifest.plugins.iter().any(|p| p.name == name) {
                             manifest.plugins.push(PluginEntry {
                                 name: name.to_string(),
+                                bundle,
                                 source: PluginSource::Git { url: url.to_string() },
                                 installed_at: Utc::now(),
                             });
@@ -132,43 +171,110 @@ pub fn list() {
     let tools_dir = storage.tools_dir();
 
     let builtins = builtin_plugins();
-    let builtin_names: Vec<&str> = builtins.iter().map(|(n, _)| *n).collect();
+
+    // Group built-in plugins by bundle
+    let mut builtin_bundles: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    for (bundle, name, _) in &builtins {
+        builtin_bundles.entry(bundle).or_default().push(name);
+    }
 
     println!("Plugins:");
     println!();
 
-    // Show built-in plugins
-    for name in &builtin_names {
-        let on_disk = tools_dir.join(format!("{name}.toml")).exists();
-        let status = if on_disk { "installed" } else { "built-in" };
-        println!("  {name}  ({status})");
+    // Show built-in bundles
+    for (bundle, names) in &builtin_bundles {
+        let any_installed = names.iter().any(|n| tools_dir.join(format!("{n}.toml")).exists());
+        let status = if any_installed { "installed" } else { "built-in" };
+        println!("  {bundle} ({status})");
+
+        let short_names: Vec<&str> = names
+            .iter()
+            .map(|n| n.strip_prefix(&format!("{bundle}-")).unwrap_or(n))
+            .collect();
+        println!("    {}", short_names.join(", "));
     }
 
-    // Show any extra installed plugins (from git repos)
+    // Show any extra installed plugins (from git repos), grouped by bundle
+    let builtin_names: Vec<&str> = builtins.iter().map(|(_, n, _)| *n).collect();
+    let mut extra_bundles: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for entry in &manifest.plugins {
         if builtin_names.contains(&entry.name.as_str()) {
             continue;
         }
-        let source = match &entry.source {
-            PluginSource::Builtin => "built-in".to_string(),
-            PluginSource::Git { url } => url.clone(),
-        };
         let on_disk = tools_dir.join(format!("{}.toml", entry.name)).exists();
         if on_disk {
-            println!("  {}  ({})", entry.name, source);
+            extra_bundles
+                .entry(entry.bundle.clone())
+                .or_default()
+                .push(entry.name.clone());
         }
+    }
+
+    for (bundle, names) in &extra_bundles {
+        let source = manifest
+            .plugins
+            .iter()
+            .find(|p| p.bundle == *bundle)
+            .map(|p| match &p.source {
+                PluginSource::Builtin => "built-in".to_string(),
+                PluginSource::Git { url } => url.clone(),
+            })
+            .unwrap_or_default();
+        println!("  {bundle} ({source})");
+
+        let short_names: Vec<&str> = names
+            .iter()
+            .map(|n| n.strip_prefix(&format!("{bundle}-")).unwrap_or(n.as_str()))
+            .collect();
+        println!("    {}", short_names.join(", "));
     }
 }
 
 pub fn remove(name: &str) {
     let storage = StorageManager::new();
     let tools_dir = storage.tools_dir();
-    let path = tools_dir.join(format!("{name}.toml"));
+    let builtins = builtin_plugins();
 
+    // Check if name matches a bundle — remove all plugins in that bundle
+    let bundle_plugins: Vec<&str> = builtins
+        .iter()
+        .filter(|(b, _, _)| *b == name)
+        .map(|(_, n, _)| *n)
+        .collect();
+
+    if !bundle_plugins.is_empty() {
+        let mut removed = 0;
+        let mut manifest = storage.read_plugin_manifest();
+
+        for plugin_name in &bundle_plugins {
+            let path = tools_dir.join(format!("{plugin_name}.toml"));
+            if path.exists() {
+                if let Err(e) = fs::remove_file(&path) {
+                    eprintln!("  error: failed to remove {plugin_name}: {e}");
+                    continue;
+                }
+                println!("  removed: {plugin_name}");
+                removed += 1;
+            }
+        }
+
+        manifest.plugins.retain(|p| p.bundle != name);
+        if let Err(e) = storage.write_plugin_manifest(&manifest) {
+            eprintln!("error: failed to update manifest: {e}");
+        }
+
+        if removed == 0 {
+            println!("{name} bundle: no plugins installed to disk, nothing to remove");
+        } else {
+            println!("{removed} plugin(s) removed from bundle {name}");
+        }
+        return;
+    }
+
+    // Single plugin removal
+    let path = tools_dir.join(format!("{name}.toml"));
     if !path.exists() {
-        // Check if it's a built-in
-        let builtins = builtin_plugins();
-        if builtins.iter().any(|(n, _)| *n == name) {
+        if builtins.iter().any(|(_, n, _)| *n == name) {
             println!("{name} is a built-in plugin (not installed to disk, nothing to remove)");
         } else {
             eprintln!("error: plugin '{name}' not found");

@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::tool_config::TransformConfig;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
     pub ref_id: String,
@@ -136,6 +138,7 @@ pub struct PluginManifest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginEntry {
     pub name: String,
+    pub bundle: String,
     pub source: PluginSource,
     pub installed_at: DateTime<Utc>,
 }
@@ -144,6 +147,26 @@ pub struct PluginEntry {
 pub enum PluginSource {
     Builtin,
     Git { url: String },
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct Settings {
+    #[serde(flatten)]
+    pub overrides: HashMap<String, PluginOverrides>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PluginOverrides {
+    pub enabled: Option<bool>,
+    pub transform: Option<TransformConfig>,
+    pub optimize: Option<OptimizeOverrides>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct OptimizeOverrides {
+    pub max_bytes: Option<usize>,
+    pub strip: Option<Vec<String>>,
+    pub keep: Option<Vec<String>>,
 }
 
 #[cfg(test)]
