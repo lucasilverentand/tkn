@@ -9,7 +9,7 @@ mod types;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "tkn", about = "Shell proxy for token-optimized AI tool output")]
+#[command(name = "tkn", about = "Shell proxy for token-optimized AI tool output", version)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

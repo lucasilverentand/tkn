@@ -123,6 +123,7 @@ pub struct CommandResult {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct OptimizedOutput {
     pub content: String,
     pub original_bytes: usize,
