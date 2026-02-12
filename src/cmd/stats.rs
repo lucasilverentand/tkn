@@ -39,4 +39,26 @@ pub fn run() {
     if let Some(last) = analytics.last_cleanup {
         println!("Last cleanup:      {}", last.format("%Y-%m-%d %H:%M:%S UTC"));
     }
+
+    if !analytics.tools.is_empty() {
+        println!();
+        println!("Per-tool usage");
+        println!("{}", "-".repeat(40));
+
+        let mut tools: Vec<_> = analytics.tools.iter().collect();
+        tools.sort_by(|a, b| b.1.count.cmp(&a.1.count));
+
+        for (tool, stats) in &tools {
+            let saved = stats.total_raw_bytes.saturating_sub(stats.total_optimized_bytes);
+            let pct = if stats.total_raw_bytes > 0 {
+                (saved as f64 / stats.total_raw_bytes as f64) * 100.0
+            } else {
+                0.0
+            };
+            println!(
+                "  {:<20} {:>5}x  saved {:.0}%",
+                tool, stats.count, pct
+            );
+        }
+    }
 }

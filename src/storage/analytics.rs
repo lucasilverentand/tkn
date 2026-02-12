@@ -3,7 +3,7 @@ use std::io::Write;
 
 use chrono::Utc;
 
-use crate::types::{Analytics, LogEntry};
+use crate::types::{Analytics, LogEntry, ToolStats, normalize_tool};
 
 use super::StorageManager;
 
@@ -27,6 +27,12 @@ impl StorageManager {
         analytics.total_optimized_bytes += entry.optimized_bytes as u64;
         analytics.total_duration_ms += entry.duration_ms;
         analytics.last_updated = Some(Utc::now());
+
+        let tool = normalize_tool(&entry.command);
+        let tool_stats = analytics.tools.entry(tool).or_insert_with(ToolStats::default);
+        tool_stats.count += 1;
+        tool_stats.total_raw_bytes += entry.raw_bytes as u64;
+        tool_stats.total_optimized_bytes += entry.optimized_bytes as u64;
 
         self.write_analytics(&analytics)
     }
