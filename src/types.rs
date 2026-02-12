@@ -128,6 +128,24 @@ pub struct OptimizedOutput {
     pub was_truncated: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PluginManifest {
+    pub plugins: Vec<PluginEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginEntry {
+    pub name: String,
+    pub source: PluginSource,
+    pub installed_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PluginSource {
+    Builtin,
+    Git { url: String },
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

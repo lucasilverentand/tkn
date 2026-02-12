@@ -1,6 +1,7 @@
 pub mod analytics;
 pub mod cleanup;
 pub mod log_store;
+pub mod plugin_store;
 pub mod session;
 
 use std::fs;

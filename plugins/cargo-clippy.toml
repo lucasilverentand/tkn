@@ -1,0 +1,4 @@
+match = "cargo clippy"
+
+[transform]
+add = ["--color=never"]

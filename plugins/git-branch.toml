@@ -1,0 +1,4 @@
+match = "git branch"
+
+[transform]
+add = ["--no-color"]

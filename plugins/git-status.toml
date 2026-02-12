@@ -1,0 +1,4 @@
+match = "git status"
+
+[transform]
+add = ["--no-color"]

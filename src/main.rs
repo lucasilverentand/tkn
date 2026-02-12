@@ -36,6 +36,27 @@ enum Commands {
     },
     /// Clean up old log files
     Cleanup,
+    /// Manage tool plugins
+    Plugin {
+        #[command(subcommand)]
+        action: PluginAction,
+    },
+}
+
+#[derive(Subcommand)]
+enum PluginAction {
+    /// Install plugins (built-ins or from a git repo URL)
+    Install {
+        /// Git repository URL (omit to install built-in defaults)
+        url: Option<String>,
+    },
+    /// List installed and available plugins
+    List,
+    /// Remove an installed plugin
+    Remove {
+        /// Plugin name to remove
+        name: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -68,6 +89,14 @@ fn main() {
         }
         Commands::Cleanup => {
             cmd::cleanup::run();
+            0
+        }
+        Commands::Plugin { action } => {
+            match action {
+                PluginAction::Install { url } => cmd::plugin::install(url.as_deref()),
+                PluginAction::List => cmd::plugin::list(),
+                PluginAction::Remove { name } => cmd::plugin::remove(&name),
+            }
             0
         }
     };

@@ -1,0 +1,4 @@
+match = "git stash"
+
+[transform]
+add = ["--no-color"]

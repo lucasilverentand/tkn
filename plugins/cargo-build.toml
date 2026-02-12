@@ -1,0 +1,14 @@
+match = "cargo build"
+
+[transform]
+add = ["--color=never"]
+
+[optimize]
+strip = [
+    "^\\s*Compiling\\s",
+    "^\\s*Downloading\\s",
+]
+keep = [
+    "(?i)error",
+    "(?i)warning",
+]

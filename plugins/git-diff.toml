@@ -1,0 +1,4 @@
+match = "git diff"
+
+[transform]
+add = ["--no-color"]
