@@ -9,12 +9,9 @@ pub fn run() {
         return;
     }
 
-    let mut value: serde_json::Value = match serde_json::from_str(&input) {
+    let value: serde_json::Value = match serde_json::from_str(&input) {
         Ok(v) => v,
-        Err(_) => {
-            print!("{input}");
-            return;
-        }
+        Err(_) => return,
     };
 
     let command = value
@@ -24,17 +21,20 @@ pub fn run() {
 
     // Pass through if empty or already wrapped (prevent recursion)
     if command.is_empty() || command.starts_with("tkn ") {
-        print!("{input}");
         return;
     }
 
     // Rewrite command to route through tkn exec
     let new_command = format!("tkn exec -- {command}");
-    if let Some(obj) = value.pointer_mut("/tool_input") {
-        obj["command"] = serde_json::Value::String(new_command);
-    }
+    let response = serde_json::json!({
+        "hookSpecificOutput": {
+            "updatedInput": {
+                "command": new_command
+            }
+        }
+    });
 
-    print!("{}", serde_json::to_string(&value).unwrap_or(input));
+    print!("{}", serde_json::to_string(&response).unwrap());
 }
 
 pub fn install() {
