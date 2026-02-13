@@ -34,7 +34,7 @@ pub fn run(args: &[String]) -> i32 {
         raw_output.extend_from_slice(&result.stderr);
     }
 
-    let optimized = optimizer::run_pipeline(&raw_output, &ref_id, config.as_ref());
+    let optimized = optimizer::run_pipeline(&raw_output, config.as_ref());
 
     let storage = StorageManager::new();
     if let Err(e) = storage.init() {
@@ -78,15 +78,21 @@ pub fn run(args: &[String]) -> i32 {
     // Opportunistic cleanup
     storage.maybe_auto_cleanup();
 
-    // Print header + optimized output
-    eprintln!("[full output: tkn log {ref_id}]");
-
+    // Print optimized output
     if !optimized.content.is_empty() {
         print!("{}", optimized.content);
-        // Ensure trailing newline
         if !optimized.content.ends_with('\n') {
             println!();
         }
+    }
+
+    // Show footer only when output was meaningfully reduced
+    let saved = optimized.original_bytes.saturating_sub(optimized.optimized_bytes);
+    let meaningful = saved > 10 && optimized.original_bytes > 0;
+    if meaningful && optimized.was_truncated {
+        eprintln!("output truncated and optimized, for full output run: tkn log {ref_id}");
+    } else if meaningful {
+        eprintln!("output optimized, for full output run: tkn log {ref_id}");
     }
 
     result.exit_code

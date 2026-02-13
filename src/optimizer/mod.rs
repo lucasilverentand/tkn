@@ -15,7 +15,7 @@ pub trait Optimizer {
 
 const MAX_OUTPUT_BYTES: usize = 8 * 1024;
 
-pub fn run_pipeline(raw: &[u8], ref_id: &str, tool_config: Option<&ToolConfig>) -> OptimizedOutput {
+pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOutput {
     let raw_str = String::from_utf8_lossy(raw);
     let original_bytes = raw.len();
 
@@ -40,9 +40,7 @@ pub fn run_pipeline(raw: &[u8], ref_id: &str, tool_config: Option<&ToolConfig>) 
         if let Some(pos) = optimized.rfind('\n') {
             optimized.truncate(pos + 1);
         }
-        optimized.push_str(&format!(
-            "\n[... truncated. Full output: tkn log {ref_id} ...]"
-        ));
+        optimized.push_str("\n[... truncated ...]");
     }
 
     let optimized_bytes = optimized.len();
@@ -157,7 +155,7 @@ mod tests {
 
         let input = "a\n".repeat(100);
         let raw = input.as_bytes();
-        let result = run_pipeline(raw, "test_ref", Some(&config));
+        let result = run_pipeline(raw,Some(&config));
         assert!(result.was_truncated);
         assert!(result.content.contains("truncated"));
     }
@@ -166,7 +164,7 @@ mod tests {
     fn test_no_tool_config_uses_default_max() {
         let input = "a\n".repeat(10000);
         let raw = input.as_bytes();
-        let result = run_pipeline(raw, "test_ref", None);
+        let result = run_pipeline(raw,None);
         // Default is 8KB, input is ~20KB
         assert!(result.was_truncated);
     }
