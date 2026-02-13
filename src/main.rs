@@ -36,6 +36,11 @@ enum Commands {
     },
     /// Clean up old log files
     Cleanup,
+    /// Analyze recorded outputs to help craft an optimal plugin config
+    Optimize {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
     /// Manage tool plugins
     Plugin {
         #[command(subcommand)]
@@ -89,6 +94,10 @@ fn main() {
         }
         Commands::Cleanup => {
             cmd::cleanup::run();
+            0
+        }
+        Commands::Optimize { args } => {
+            cmd::optimize::run(&args);
             0
         }
         Commands::Plugin { action } => {
