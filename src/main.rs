@@ -89,7 +89,11 @@ enum HookAction {
     /// Uninstall the Claude Code hook
     Uninstall,
     /// Run the hook (reads stdin, rewrites command, writes stdout)
-    Run,
+    Run {
+        /// Extra arguments (ignored, passed by Claude Code)
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+        _args: Vec<String>,
+    },
 }
 
 fn main() {
@@ -109,7 +113,7 @@ fn main() {
             match action {
                 HookAction::Install => cmd::hook::install(),
                 HookAction::Uninstall => cmd::hook::uninstall(),
-                HookAction::Run => cmd::hook::run(),
+                HookAction::Run { .. } => cmd::hook::run(),
             }
             0
         }
