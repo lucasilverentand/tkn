@@ -50,12 +50,7 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
 
     let was_truncated = optimized.len() > max_bytes;
     if was_truncated {
-        optimized.truncate(max_bytes);
-        // Find last newline to avoid cutting mid-line
-        if let Some(pos) = optimized.rfind('\n') {
-            optimized.truncate(pos + 1);
-        }
-        optimized.push_str("\n[... truncated ...]");
+        optimized = truncate_middle(&optimized, max_bytes);
     }
 
     let optimized_bytes = optimized.len();
@@ -66,6 +61,75 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
         optimized_bytes,
         was_truncated,
     }
+}
+
+/// Truncate by removing the middle of the output, keeping the beginning and end
+/// which typically carry the most useful signal (headers, context, results, errors).
+fn truncate_middle(input: &str, max_bytes: usize) -> String {
+    let lines: Vec<&str> = input.lines().collect();
+
+    if lines.len() <= 2 {
+        let mut out = input[..max_bytes].to_string();
+        if let Some(pos) = out.rfind('\n') {
+            out.truncate(pos + 1);
+        }
+        out.push_str("\n[... truncated ...]");
+        return out;
+    }
+
+    // Budget: ~40% bytes each for head and tail, capped at 100 lines each
+    let half_budget = max_bytes * 2 / 5;
+    let max_section_lines = 100;
+
+    // Collect head lines up to budget
+    let mut head = String::new();
+    let mut head_count = 0;
+    for line in &lines {
+        if head_count >= max_section_lines {
+            break;
+        }
+        let next = if head.is_empty() {
+            line.len()
+        } else {
+            head.len() + 1 + line.len()
+        };
+        if next > half_budget && head_count > 0 {
+            break;
+        }
+        if !head.is_empty() {
+            head.push('\n');
+        }
+        head.push_str(line);
+        head_count += 1;
+    }
+
+    // Collect tail lines up to budget (from the end, skip what head already took)
+    let mut tail_lines: Vec<&str> = Vec::new();
+    let mut tail_bytes = 0;
+    for line in lines[head_count..].iter().rev() {
+        if tail_lines.len() >= max_section_lines {
+            break;
+        }
+        let next = if tail_bytes == 0 {
+            line.len()
+        } else {
+            tail_bytes + 1 + line.len()
+        };
+        if next > half_budget && !tail_lines.is_empty() {
+            break;
+        }
+        tail_lines.push(line);
+        tail_bytes = next;
+    }
+    tail_lines.reverse();
+
+    let omitted = lines.len() - head_count - tail_lines.len();
+    let separator = format!("\n[... {} lines omitted ...]\n", omitted);
+
+    let mut result = head;
+    result.push_str(&separator);
+    result.push_str(&tail_lines.join("\n"));
+    result
 }
 
 fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
@@ -170,9 +234,9 @@ mod tests {
 
         let input = "a\n".repeat(100);
         let raw = input.as_bytes();
-        let result = run_pipeline(raw,Some(&config));
+        let result = run_pipeline(raw, Some(&config));
         assert!(result.was_truncated);
-        assert!(result.content.contains("truncated"));
+        assert!(result.content.contains("omitted"));
     }
 
     #[test]
@@ -182,6 +246,18 @@ mod tests {
         let result = run_pipeline(raw,None);
         // Default is 8KB, input is ~20KB
         assert!(result.was_truncated);
+    }
+
+    #[test]
+    fn test_truncate_middle_keeps_head_and_tail() {
+        let lines: Vec<String> = (1..=50).map(|i| format!("line {i}")).collect();
+        let input = lines.join("\n");
+        let result = truncate_middle(&input, 200);
+        assert!(result.starts_with("line 1\n"));
+        assert!(result.contains("omitted"));
+        assert!(result.ends_with("line 50"));
+        // Should not contain middle lines
+        assert!(!result.contains("line 25"));
     }
 
     #[test]
