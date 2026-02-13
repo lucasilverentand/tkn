@@ -6,16 +6,12 @@ use std::path::PathBuf;
 pub fn run() {
     let mut input = String::new();
     if std::io::stdin().read_to_string(&mut input).is_err() {
-        print!("{{}}");
         return;
     }
 
     let value: serde_json::Value = match serde_json::from_str(&input) {
         Ok(v) => v,
-        Err(_) => {
-            print!("{{}}");
-            return;
-        }
+        Err(_) => return,
     };
 
     let command = value
@@ -25,7 +21,6 @@ pub fn run() {
 
     // Pass through if empty or already wrapped (prevent recursion)
     if command.is_empty() || command.starts_with("tkn ") {
-        print!("{{}}");
         return;
     }
 
@@ -33,6 +28,7 @@ pub fn run() {
     let new_command = format!("tkn exec -- {command}");
     let response = serde_json::json!({
         "hookSpecificOutput": {
+            "permissionDecision": "allow",
             "updatedInput": {
                 "command": new_command
             }
