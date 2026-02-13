@@ -4,10 +4,6 @@ match = "cargo build"
 add = ["--color=never"]
 
 [optimize]
-strip = [
-    "^\\s*Compiling\\s",
-    "^\\s*Downloading\\s",
-]
 keep = [
     "(?i)error",
     "(?i)warning",
