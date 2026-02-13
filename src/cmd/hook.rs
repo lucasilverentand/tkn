@@ -1,5 +1,41 @@
 use std::fs;
+use std::io::Read;
 use std::path::PathBuf;
+
+/// Runs as the hook itself: reads stdin JSON, rewrites the command, writes to stdout.
+pub fn run() {
+    let mut input = String::new();
+    if std::io::stdin().read_to_string(&mut input).is_err() {
+        return;
+    }
+
+    let mut value: serde_json::Value = match serde_json::from_str(&input) {
+        Ok(v) => v,
+        Err(_) => {
+            print!("{input}");
+            return;
+        }
+    };
+
+    let command = value
+        .pointer("/tool_input/command")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    // Pass through if empty or already wrapped (prevent recursion)
+    if command.is_empty() || command.starts_with("tkn ") {
+        print!("{input}");
+        return;
+    }
+
+    // Rewrite command to route through tkn exec
+    let new_command = format!("tkn exec -- {command}");
+    if let Some(obj) = value.pointer_mut("/tool_input") {
+        obj["command"] = serde_json::Value::String(new_command);
+    }
+
+    print!("{}", serde_json::to_string(&value).unwrap_or(input));
+}
 
 pub fn install() {
     let claude_dir = match dirs::home_dir() {
@@ -9,54 +45,6 @@ pub fn install() {
             return;
         }
     };
-
-    // Ensure hooks directory exists
-    let hooks_dir = claude_dir.join("hooks");
-    if let Err(e) = fs::create_dir_all(&hooks_dir) {
-        eprintln!("tkn: failed to create hooks dir: {e}");
-        return;
-    }
-
-    // Write the hook script
-    let hook_script_path = hooks_dir.join("tkn-hook.sh");
-    let hook_script = r#"#!/usr/bin/env bash
-# tkn hook - rewrites Bash commands to route through tkn exec
-# Installed by: tkn hook install
-
-set -euo pipefail
-
-INPUT=$(cat)
-
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
-if [ -z "$COMMAND" ]; then
-    echo "$INPUT"
-    exit 0
-fi
-
-# Skip if command already starts with tkn (prevent recursion)
-if echo "$COMMAND" | grep -q '^tkn '; then
-    echo "$INPUT"
-    exit 0
-fi
-
-# Rewrite command to route through tkn exec
-ESCAPED=$(echo "$COMMAND" | jq -Rs '.')
-NEW_COMMAND="tkn exec -- $(echo "$ESCAPED" | jq -r '.')"
-
-echo "$INPUT" | jq --arg cmd "$NEW_COMMAND" '.tool_input.command = $cmd'
-"#;
-
-    if let Err(e) = fs::write(&hook_script_path, hook_script) {
-        eprintln!("tkn: failed to write hook script: {e}");
-        return;
-    }
-
-    // Make executable
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fs::set_permissions(&hook_script_path, fs::Permissions::from_mode(0o755));
-    }
 
     // Update settings.json
     let settings_path = claude_dir.join("settings.json");
@@ -78,26 +66,13 @@ echo "$INPUT" | jq --arg cmd "$NEW_COMMAND" '.tool_input.command = $cmd'
         "matcher": "Bash",
         "hooks": [{
             "type": "command",
-            "command": hook_script_path.to_string_lossy()
+            "command": "tkn hook run"
         }]
     });
 
     // Check if our hook is already installed
     let arr = pre_tool_use.as_array_mut().unwrap();
-    let already_installed = arr.iter().any(|entry| {
-        entry
-            .get("hooks")
-            .and_then(|h| h.as_array())
-            .map(|hooks| {
-                hooks.iter().any(|h| {
-                    h.get("command")
-                        .and_then(|c| c.as_str())
-                        .map(|c| c.contains("tkn-hook"))
-                        .unwrap_or(false)
-                })
-            })
-            .unwrap_or(false)
-    });
+    let already_installed = arr.iter().any(|entry| is_tkn_hook(entry));
 
     if !already_installed {
         arr.push(hook_entry);
@@ -108,9 +83,14 @@ echo "$INPUT" | jq --arg cmd "$NEW_COMMAND" '.tool_input.command = $cmd'
         return;
     }
 
+    // Clean up legacy hook script if present
+    let legacy_script = claude_dir.join("hooks").join("tkn-hook.sh");
+    if legacy_script.exists() {
+        let _ = fs::remove_file(&legacy_script);
+    }
+
     println!("tkn hook installed successfully.");
-    println!("  Hook script: {}", hook_script_path.display());
-    println!("  Settings:    {}", settings_path.display());
+    println!("  Settings: {}", settings_path.display());
 }
 
 pub fn uninstall() {
@@ -122,12 +102,10 @@ pub fn uninstall() {
         }
     };
 
-    // Remove hook script
-    let hook_script_path = claude_dir.join("hooks").join("tkn-hook.sh");
-    if hook_script_path.exists() {
-        if let Err(e) = fs::remove_file(&hook_script_path) {
-            eprintln!("tkn: failed to remove hook script: {e}");
-        }
+    // Clean up legacy hook script if present
+    let legacy_script = claude_dir.join("hooks").join("tkn-hook.sh");
+    if legacy_script.exists() {
+        let _ = fs::remove_file(&legacy_script);
     }
 
     // Remove from settings.json
@@ -138,20 +116,7 @@ pub fn uninstall() {
         if let Some(hooks) = settings.get_mut("hooks") {
             if let Some(pre_tool_use) = hooks.get_mut("PreToolUse") {
                 if let Some(arr) = pre_tool_use.as_array_mut() {
-                    arr.retain(|entry| {
-                        !entry
-                            .get("hooks")
-                            .and_then(|h| h.as_array())
-                            .map(|hooks| {
-                                hooks.iter().any(|h| {
-                                    h.get("command")
-                                        .and_then(|c| c.as_str())
-                                        .map(|c| c.contains("tkn-hook"))
-                                        .unwrap_or(false)
-                                })
-                            })
-                            .unwrap_or(false)
-                    });
+                    arr.retain(|entry| !is_tkn_hook(entry));
                 }
             }
         }
@@ -163,6 +128,22 @@ pub fn uninstall() {
     }
 
     println!("tkn hook uninstalled successfully.");
+}
+
+/// Check if a hook entry is a tkn hook (matches both legacy shell script and new `tkn hook run`)
+fn is_tkn_hook(entry: &serde_json::Value) -> bool {
+    entry
+        .get("hooks")
+        .and_then(|h| h.as_array())
+        .map(|hooks| {
+            hooks.iter().any(|h| {
+                h.get("command")
+                    .and_then(|c| c.as_str())
+                    .map(|c| c.contains("tkn"))
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false)
 }
 
 fn read_settings(path: &PathBuf) -> serde_json::Value {

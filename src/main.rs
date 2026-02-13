@@ -81,6 +81,8 @@ enum HookAction {
     Install,
     /// Uninstall the Claude Code hook
     Uninstall,
+    /// Run the hook (reads stdin, rewrites command, writes stdout)
+    Run,
 }
 
 fn main() {
@@ -100,6 +102,7 @@ fn main() {
             match action {
                 HookAction::Install => cmd::hook::install(),
                 HookAction::Uninstall => cmd::hook::uninstall(),
+                HookAction::Run => cmd::hook::run(),
             }
             0
         }
