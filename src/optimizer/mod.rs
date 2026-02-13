@@ -1,4 +1,5 @@
 mod basic;
+mod dedup;
 
 use regex::Regex;
 
@@ -6,6 +7,7 @@ use crate::tool_config::ToolConfig;
 use crate::types::OptimizedOutput;
 
 pub use basic::BasicOptimizer;
+pub use dedup::DedupOptimizer;
 
 pub trait Optimizer {
     fn optimize(&self, raw: &str) -> String;
@@ -17,8 +19,10 @@ pub fn run_pipeline(raw: &[u8], ref_id: &str, tool_config: Option<&ToolConfig>) 
     let raw_str = String::from_utf8_lossy(raw);
     let original_bytes = raw.len();
 
-    let optimizer = BasicOptimizer::new();
-    let mut optimized = optimizer.optimize(&raw_str);
+    let basic = BasicOptimizer::new();
+    let dedup = DedupOptimizer::new();
+    let mut optimized = basic.optimize(&raw_str);
+    optimized = dedup.optimize(&optimized);
 
     // Apply tool-specific strip/keep filters
     if let Some(config) = tool_config {
