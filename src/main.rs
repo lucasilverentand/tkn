@@ -34,6 +34,8 @@ enum Commands {
         #[command(subcommand)]
         action: HookAction,
     },
+    /// Clear all stats and logs
+    Clean,
     /// Clean up old log files
     Cleanup,
     /// Analyze recorded outputs to help craft an optimal plugin config
@@ -104,6 +106,10 @@ fn main() {
                 HookAction::Uninstall => cmd::hook::uninstall(),
                 HookAction::Run => cmd::hook::run(),
             }
+            0
+        }
+        Commands::Clean => {
+            cmd::clean::run();
             0
         }
         Commands::Cleanup => {
