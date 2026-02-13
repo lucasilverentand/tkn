@@ -38,8 +38,8 @@ enum Commands {
     Cleanup,
     /// Analyze recorded outputs to help craft an optimal plugin config
     Optimize {
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-        args: Vec<String>,
+        #[command(subcommand)]
+        action: OptimizeAction,
     },
     /// Manage tool plugins
     Plugin {
@@ -61,6 +61,17 @@ enum PluginAction {
     Remove {
         /// Plugin name to remove
         name: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum OptimizeAction {
+    /// Scan all tools and rank by optimization opportunity
+    Scan,
+    /// Analyze a specific tool's output patterns
+    Report {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
     },
 }
 
@@ -96,8 +107,11 @@ fn main() {
             cmd::cleanup::run();
             0
         }
-        Commands::Optimize { args } => {
-            cmd::optimize::run(&args);
+        Commands::Optimize { action } => {
+            match action {
+                OptimizeAction::Scan => cmd::optimize::scan(),
+                OptimizeAction::Report { args } => cmd::optimize::report(&args),
+            }
             0
         }
         Commands::Plugin { action } => {

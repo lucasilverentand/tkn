@@ -4,10 +4,121 @@ use crate::storage::StorageManager;
 use crate::tool_config;
 use crate::types::normalize_tool;
 
-pub fn run(args: &[String]) {
+pub fn scan() {
+    let storage = StorageManager::new();
+    let entries = storage.list_log_entries().unwrap_or_default();
+
+    if entries.is_empty() {
+        println!("No log entries found. Run some commands through tkn first.");
+        return;
+    }
+
+    // Group entries by normalized tool name
+    let mut tools: HashMap<String, ToolSummary> = HashMap::new();
+    for entry in &entries {
+        let tool = normalize_tool(&entry.command);
+        let summary = tools.entry(tool).or_default();
+        summary.count += 1;
+        summary.total_raw += entry.raw_bytes;
+        summary.total_optimized += entry.optimized_bytes;
+    }
+
+    // Score each tool for optimization opportunity
+    let mut ranked: Vec<_> = tools
+        .into_iter()
+        .map(|(name, summary)| {
+            let has_plugin = tool_config::load_tool_config(&name).is_some();
+            let savings_pct = if summary.total_raw > 0 {
+                ((summary.total_raw - summary.total_optimized) as f64
+                    / summary.total_raw as f64)
+                    * 100.0
+            } else {
+                0.0
+            };
+            let avg_raw = summary.total_raw as f64 / summary.count as f64;
+
+            // Opportunity score: high bytes * low savings * frequency
+            // Tools with no plugin and large outputs rank highest
+            let plugin_penalty = if has_plugin { 0.3 } else { 1.0 };
+            let score = avg_raw * summary.count as f64 * plugin_penalty * (1.0 - savings_pct / 100.0);
+
+            ScoredTool {
+                name,
+                count: summary.count,
+                avg_raw,
+                savings_pct,
+                has_plugin,
+                score,
+            }
+        })
+        .collect();
+
+    ranked.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+
+    println!("tkn optimize scan");
+    println!("{}", "=".repeat(70));
+    println!();
+    println!(
+        "  {:<22} {:>5} {:>10} {:>8} {:>8}",
+        "TOOL", "RUNS", "AVG SIZE", "SAVED", "PLUGIN"
+    );
+    println!("  {}", "-".repeat(58));
+
+    for tool in &ranked {
+        let plugin_str = if tool.has_plugin { "yes" } else { "-" };
+        println!(
+            "  {:<22} {:>5} {:>8.0} B {:>6.1}% {:>8}",
+            tool.name, tool.count, tool.avg_raw, tool.savings_pct, plugin_str
+        );
+    }
+
+    // Suggest the top candidate
+    if let Some(top) = ranked.first() {
+        println!();
+        if !top.has_plugin {
+            println!(
+                "Recommendation: \"{}\" has no plugin and {} runs averaging {:.0} bytes.",
+                top.name, top.count, top.avg_raw
+            );
+            println!(
+                "  Run: tkn optimize report -- {}",
+                top.name
+            );
+        } else if top.savings_pct < 20.0 {
+            println!(
+                "Recommendation: \"{}\" has a plugin but only {:.1}% savings across {} runs.",
+                top.name, top.savings_pct, top.count
+            );
+            println!(
+                "  Run: tkn optimize report -- {}",
+                top.name
+            );
+        } else {
+            println!("All tracked tools look well-optimized.");
+        }
+    }
+}
+
+#[derive(Default)]
+struct ToolSummary {
+    count: usize,
+    total_raw: usize,
+    total_optimized: usize,
+}
+
+struct ScoredTool {
+    name: String,
+    count: usize,
+    avg_raw: f64,
+    savings_pct: f64,
+    has_plugin: bool,
+    score: f64,
+}
+
+pub fn report(args: &[String]) {
     if args.is_empty() {
-        eprintln!("Usage: tkn optimize -- <command>");
-        eprintln!("Example: tkn optimize -- git branch");
+        eprintln!("Usage: tkn optimize report -- <command>");
+        eprintln!("Example: tkn optimize report -- git branch");
         std::process::exit(1);
     }
 
