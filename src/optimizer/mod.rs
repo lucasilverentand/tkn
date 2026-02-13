@@ -15,9 +15,24 @@ pub trait Optimizer {
 
 const MAX_OUTPUT_BYTES: usize = 8 * 1024;
 
+const SHORT_LINE_THRESHOLD: usize = 20;
+
 pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOutput {
     let raw_str = String::from_utf8_lossy(raw);
     let original_bytes = raw.len();
+    let has_plugin = tool_config.is_some();
+
+    // Short output with no specific plugin: pass through as-is
+    if !has_plugin && raw_str.lines().count() <= SHORT_LINE_THRESHOLD {
+        let content = raw_str.into_owned();
+        let optimized_bytes = content.len();
+        return OptimizedOutput {
+            content,
+            original_bytes,
+            optimized_bytes,
+            was_truncated: false,
+        };
+    }
 
     let basic = BasicOptimizer::new();
     let dedup = DedupOptimizer::new();
