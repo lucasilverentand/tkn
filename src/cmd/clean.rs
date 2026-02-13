@@ -2,27 +2,28 @@ use std::fs;
 
 use crate::storage::StorageManager;
 
-pub fn run() {
+pub fn run(logs_only: bool, stats_only: bool) {
     let storage = StorageManager::new();
+    let clean_all = !logs_only && !stats_only;
 
-    // Remove logs
-    if storage.logs_dir().exists() {
-        if let Err(e) = fs::remove_dir_all(storage.logs_dir()) {
-            eprintln!("tkn: failed to remove logs: {e}");
+    if clean_all || logs_only {
+        if storage.logs_dir().exists() {
+            if let Err(e) = fs::remove_dir_all(storage.logs_dir()) {
+                eprintln!("tkn: failed to remove logs: {e}");
+            }
+        }
+        if storage.sessions_dir().exists() {
+            if let Err(e) = fs::remove_dir_all(storage.sessions_dir()) {
+                eprintln!("tkn: failed to remove sessions: {e}");
+            }
         }
     }
 
-    // Remove sessions
-    if storage.sessions_dir().exists() {
-        if let Err(e) = fs::remove_dir_all(storage.sessions_dir()) {
-            eprintln!("tkn: failed to remove sessions: {e}");
-        }
-    }
-
-    // Remove analytics
-    if storage.analytics_path().exists() {
-        if let Err(e) = fs::remove_file(storage.analytics_path()) {
-            eprintln!("tkn: failed to remove analytics: {e}");
+    if clean_all || stats_only {
+        if storage.analytics_path().exists() {
+            if let Err(e) = fs::remove_file(storage.analytics_path()) {
+                eprintln!("tkn: failed to remove analytics: {e}");
+            }
         }
     }
 
@@ -31,5 +32,11 @@ pub fn run() {
         eprintln!("tkn: failed to reinitialize directories: {e}");
     }
 
-    println!("All stats and logs cleared.");
+    if clean_all {
+        println!("All stats and logs cleared.");
+    } else if logs_only {
+        println!("Logs cleared.");
+    } else {
+        println!("Stats cleared.");
+    }
 }

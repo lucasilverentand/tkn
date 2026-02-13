@@ -55,7 +55,7 @@ pub fn scan() {
 
     ranked.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
-    println!("tkn optimize scan");
+    println!("tkn analyze scan");
     println!("{}", "=".repeat(70));
     println!();
     println!(
@@ -81,7 +81,7 @@ pub fn scan() {
                 top.name, top.count, top.avg_raw
             );
             println!(
-                "  Run: tkn optimize report -- {}",
+                "  Run: tkn analyze report -- {}",
                 top.name
             );
         } else if top.savings_pct < 20.0 {
@@ -90,7 +90,7 @@ pub fn scan() {
                 top.name, top.savings_pct, top.count
             );
             println!(
-                "  Run: tkn optimize report -- {}",
+                "  Run: tkn analyze report -- {}",
                 top.name
             );
         } else {
@@ -117,8 +117,8 @@ struct ScoredTool {
 
 pub fn report(args: &[String]) {
     if args.is_empty() {
-        eprintln!("Usage: tkn optimize report -- <command>");
-        eprintln!("Example: tkn optimize report -- git branch");
+        eprintln!("Usage: tkn analyze report -- <command>");
+        eprintln!("Example: tkn analyze report -- git branch");
         std::process::exit(1);
     }
 
@@ -169,7 +169,7 @@ pub fn report(args: &[String]) {
     sorted_raw.sort();
 
     // Print report
-    println!("tkn optimize: {tool_name}");
+    println!("tkn analyze: {tool_name}");
     println!("{}", "=".repeat(60));
 
     println!();

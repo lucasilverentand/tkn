@@ -34,14 +34,19 @@ enum Commands {
         #[command(subcommand)]
         action: HookAction,
     },
-    /// Clear all stats and logs
-    Clean,
-    /// Clean up old log files
-    Cleanup,
+    /// Clear stats and logs
+    Clean {
+        /// Only clear logs
+        #[arg(long)]
+        logs: bool,
+        /// Only clear stats
+        #[arg(long)]
+        stats: bool,
+    },
     /// Analyze recorded outputs to help craft an optimal plugin config
-    Optimize {
+    Analyze {
         #[command(subcommand)]
-        action: OptimizeAction,
+        action: AnalyzeAction,
     },
     /// Manage tool plugins
     Plugin {
@@ -67,7 +72,7 @@ enum PluginAction {
 }
 
 #[derive(Subcommand)]
-enum OptimizeAction {
+enum AnalyzeAction {
     /// Scan all tools and rank by optimization opportunity
     Scan,
     /// Analyze a specific tool's output patterns
@@ -108,18 +113,14 @@ fn main() {
             }
             0
         }
-        Commands::Clean => {
-            cmd::clean::run();
+        Commands::Clean { logs, stats } => {
+            cmd::clean::run(logs, stats);
             0
         }
-        Commands::Cleanup => {
-            cmd::cleanup::run();
-            0
-        }
-        Commands::Optimize { action } => {
+        Commands::Analyze { action } => {
             match action {
-                OptimizeAction::Scan => cmd::optimize::scan(),
-                OptimizeAction::Report { args } => cmd::optimize::report(&args),
+                AnalyzeAction::Scan => cmd::analyze::scan(),
+                AnalyzeAction::Report { args } => cmd::analyze::report(&args),
             }
             0
         }
