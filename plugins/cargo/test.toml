@@ -3,3 +3,9 @@ match = "cargo test"
 [transform]
 add = ["--color=never"]
 replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
+
+[optimize]
+strip = [
+    "^test .+ \\.\\.\\. ok$",
+    "^\\s*Finished\\s",
+]
