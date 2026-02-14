@@ -24,11 +24,15 @@ pub fn run() {
         return;
     }
 
+    // Pick subcommand: long-lived processes get `pass` (inherited stdio),
+    // everything else gets `exec` (captured + optimized).
+    let subcmd = if is_long_lived(command) { "pass" } else { "exec" };
+
     // Pass the original command verbatim via env var so it survives shell
     // arg-splitting (e.g. multi-word git commit messages keep their quoting).
     // Single-quote the value, escaping any embedded single quotes.
     let escaped = command.replace('\'', "'\\''");
-    let new_command = format!("TKN_ORIGINAL_CMD='{escaped}' tkn exec");
+    let new_command = format!("TKN_ORIGINAL_CMD='{escaped}' tkn {subcmd}");
     let response = serde_json::json!({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -166,4 +170,41 @@ fn write_settings(path: &PathBuf, value: &serde_json::Value) -> std::io::Result<
     let json = serde_json::to_string_pretty(value)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     fs::write(path, json)
+}
+
+/// Patterns that indicate a long-running / streaming process.
+const LONG_LIVED_PREFIXES: &[&str] = &[
+    "npm run dev",
+    "npm start",
+    "npx dev",
+    "yarn dev",
+    "pnpm dev",
+    "bun dev",
+    "bun run dev",
+    "cargo watch",
+    "cargo run",
+    "python manage.py runserver",
+    "python -m http.server",
+    "flask run",
+    "uvicorn",
+    "gunicorn",
+    "tail -f",
+    "tail --follow",
+    "docker compose up",
+    "docker-compose up",
+    "watch ",
+    "ng serve",
+    "next dev",
+    "vite",
+    "webpack serve",
+];
+
+fn is_long_lived(command: &str) -> bool {
+    let cmd = command.trim();
+    for pattern in LONG_LIVED_PREFIXES {
+        if cmd.starts_with(pattern) {
+            return true;
+        }
+    }
+    cmd.contains(" --watch") || cmd.ends_with(" --watch")
 }

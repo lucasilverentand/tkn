@@ -22,6 +22,11 @@ enum Commands {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
+    /// Pass a command through with inherited stdio (no capture/optimization)
+    Pass {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
     /// Show analytics and usage statistics
     Stats,
     /// Browse and retrieve command logs
@@ -106,6 +111,7 @@ fn main() {
 
     let exit_code = match cli.command {
         Commands::Exec { args } => cmd::exec::run(&args),
+        Commands::Pass { args } => cmd::pass::run(&args),
         Commands::Stats => {
             cmd::stats::run();
             0
