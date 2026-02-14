@@ -28,6 +28,7 @@ pub fn run() {
     let new_command = format!("tkn exec -- {command}");
     let response = serde_json::json!({
         "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
             "permissionDecision": "allow",
             "updatedInput": {
                 "command": new_command
