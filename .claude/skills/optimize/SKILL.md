@@ -9,7 +9,7 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
 
 - Write plugins to `plugins/` (builtin), **never** `~/.tkn/tools/`
 - **Never add color-related transforms** — tkn strips ANSI escape codes automatically in post-processing (`strip_ansi`), so `--no-color`, `--color=never`, etc. are unnecessary and can cause compatibility issues (e.g., Apple Git)
-- The global 500-line cap exists as a safety net — plugins should aim well under it
+- The global 500-line cap exists as a safety net — plugins can override it with `max_lines`
 - Always read an existing plugin TOML before modifying it
 - Always use `tkn replay` to validate changes against real data
 
@@ -44,7 +44,7 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
    strip = ["^pattern_to_remove"]
    # OR
    keep = ["^pattern_to_keep"]
-   max_bytes = 16384
+   # max_lines = 200  # optional: override default 500-line cap
    ```
 
 6. **Register the plugin** — Add it to `builtin_plugins()` in `src/tool_config.rs` with the appropriate bundle name, plugin name, and `include_str!` path. Update the test count in `test_builtin_plugins_returns_all` and add the bundle to `test_builtin_plugins_have_bundles` if it's new.
@@ -52,7 +52,7 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
 7. **Show before/after** — Use `tkn replay <ref_id>` on historical runs (or run the command) to show raw vs optimized output. Present the comparison to the user.
 
 8. **Iterate** — Use `AskUserQuestion` to present choices:
-   - "Keep this version?" / "Strip more aggressively?" / "Switch from strip to keep?" / "Adjust max_bytes?"
+   - "Keep this version?" / "Strip more aggressively?" / "Switch from strip to keep?" / "Adjust max_lines?"
    - Use focused options, not open-ended questions
 
 9. **Finalize** — Run `cargo test` to verify, then summarize what the plugin does.
@@ -82,11 +82,11 @@ replace = { "--format=table" = "--format=json" }
 [optimize]
 strip = ["^index [a-f0-9]+", "^diff --git"]  # regex patterns to remove lines
 keep = ["^\\+", "^-", "^@@"]                  # regex patterns to keep (overrides strip)
-max_bytes = 16384                              # truncate output beyond this
+max_lines = 200                                # override default 500-line cap (can go higher or lower)
 raw = false                                    # set true to skip blank-line collapse
 ```
 
 - **No color flags** — tkn strips ANSI codes automatically; never use `--no-color`, `--color=never`, etc.
 - `strip` and `keep` are mutually exclusive strategies — use one or the other
 - `keep` wins if both are present (lines must match a keep pattern)
-- `max_bytes` triggers middle-truncation (40% head / 40% tail / 20% separator)
+- `max_lines` overrides the global 500-line cap — use sparingly for tools that need more or less

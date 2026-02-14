@@ -1,4 +1,0 @@
-match = "du"
-
-[optimize]
-max_bytes = 8192

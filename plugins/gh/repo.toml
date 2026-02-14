@@ -7,4 +7,3 @@ strip = [
     "^https://github\\.com/",
     "^\\s+$",
 ]
-max_bytes = 8192

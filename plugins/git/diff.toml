@@ -9,4 +9,3 @@ strip = [
     "^rename (from|to) ",
     "^copy (from|to) ",
 ]
-max_bytes = 32768

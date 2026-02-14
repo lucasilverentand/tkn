@@ -10,4 +10,3 @@ strip = [
     "https://github\\.com/.*/runs/\\d+",
     "^\\s*Merging is blocked",
 ]
-max_bytes = 12288

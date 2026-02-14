@@ -1,4 +1,0 @@
-match = "gh workflow"
-
-[optimize]
-max_bytes = 4096

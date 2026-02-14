@@ -7,4 +7,3 @@ strip = [
     "^(old|new) mode ",
     "^(new file|deleted file) mode ",
 ]
-max_bytes = 32768

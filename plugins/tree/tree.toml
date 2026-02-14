@@ -4,7 +4,6 @@ match = "tree"
 add = ["--gitignore"]
 
 [optimize]
-max_bytes = 8192
 strip = [
     "\\d+ directories, \\d+ files",
 ]

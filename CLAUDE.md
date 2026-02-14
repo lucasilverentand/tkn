@@ -29,7 +29,7 @@ A shell proxy that intercepts CLI commands and optimizes their output to reduce 
 Plugins are TOML files in `plugins/` organized by tool bundle (e.g., `plugins/git/diff.toml`). Each defines:
 - `match` — command pattern (e.g., `"git diff"`)
 - `[transform]` — `add`, `remove`, `replace` rules for CLI flags
-- `[optimize]` — `strip`/`keep` regex filters, `max_bytes` limit, `raw` toggle
+- `[optimize]` — `strip`/`keep` regex filters, `max_lines` override, `raw` toggle
 
 **Loading priority**: user overrides in `~/.tkn/tools/*.toml` > built-in `plugins/` > `~/.tkn/settings.toml` overrides.
 

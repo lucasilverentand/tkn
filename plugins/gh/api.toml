@@ -7,4 +7,3 @@ strip = [
     "\"gravatar_id\":\\s",
     "\"avatar_url\":\\s",
 ]
-max_bytes = 8192

@@ -39,7 +39,7 @@ pub struct OptimizeConfig {
     #[serde(default)]
     pub keep: Vec<String>,
 
-    pub max_bytes: Option<usize>,
+    pub max_lines: Option<usize>,
 
     /// Skip blank-line collapse and trailing-whitespace trim (only ANSI strip + CR resolve).
     #[serde(default)]
@@ -50,12 +50,8 @@ pub struct OptimizeConfig {
 pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
     vec![
         ("git", "git-diff", include_str!("../plugins/git/diff.toml")),
-        ("git", "git-log", include_str!("../plugins/git/log.toml")),
         ("git", "git-status", include_str!("../plugins/git/status.toml")),
         ("git", "git-show", include_str!("../plugins/git/show.toml")),
-        ("git", "git-blame", include_str!("../plugins/git/blame.toml")),
-        ("git", "git-branch", include_str!("../plugins/git/branch.toml")),
-        ("git", "git-stash", include_str!("../plugins/git/stash.toml")),
         ("cargo", "cargo-build", include_str!("../plugins/cargo/build.toml")),
         ("cargo", "cargo-test", include_str!("../plugins/cargo/test.toml")),
         ("cargo", "cargo-clippy", include_str!("../plugins/cargo/clippy.toml")),
@@ -63,18 +59,10 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("gh", "gh-pr", include_str!("../plugins/gh/pr.toml")),
         ("gh", "gh-repo", include_str!("../plugins/gh/repo.toml")),
         ("gh", "gh-run", include_str!("../plugins/gh/run.toml")),
-        ("gh", "gh-workflow", include_str!("../plugins/gh/workflow.toml")),
         ("gh", "gh-api", include_str!("../plugins/gh/api.toml")),
         ("find", "find", include_str!("../plugins/find/find.toml")),
-        ("grep", "grep", include_str!("../plugins/grep/grep.toml")),
-        ("sed", "sed", include_str!("../plugins/sed/sed.toml")),
         ("curl", "curl", include_str!("../plugins/curl/curl.toml")),
         ("tree", "tree", include_str!("../plugins/tree/tree.toml")),
-        ("du", "du", include_str!("../plugins/du/du.toml")),
-        ("tar", "tar", include_str!("../plugins/tar/tar.toml")),
-        ("head", "head", include_str!("../plugins/head/head.toml")),
-        ("tail", "tail", include_str!("../plugins/tail/tail.toml")),
-        ("wc", "wc", include_str!("../plugins/wc/wc.toml")),
         ("ls", "ls", include_str!("../plugins/ls/ls.toml")),
     ]
 }
@@ -150,8 +138,8 @@ fn apply_overrides(config: &mut ToolConfig, overrides: &PluginOverrides) {
         }
     }
     if let Some(ref o) = overrides.optimize {
-        if let Some(max_bytes) = o.max_bytes {
-            config.optimize.max_bytes = Some(max_bytes);
+        if let Some(max_lines) = o.max_lines {
+            config.optimize.max_lines = Some(max_lines);
         }
         if let Some(ref strip) = o.strip {
             config.optimize.strip = strip.clone();
@@ -228,12 +216,8 @@ mod tests {
         let defaults = load_defaults();
         let names: Vec<&str> = defaults.iter().map(|c| c.match_pattern.as_str()).collect();
         assert!(names.contains(&"git diff"));
-        assert!(names.contains(&"git log"));
         assert!(names.contains(&"git status"));
         assert!(names.contains(&"git show"));
-        assert!(names.contains(&"git blame"));
-        assert!(names.contains(&"git branch"));
-        assert!(names.contains(&"git stash"));
         assert!(names.contains(&"cargo build"));
         assert!(names.contains(&"cargo test"));
         assert!(names.contains(&"cargo clippy"));
@@ -242,52 +226,45 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 27);
+        assert_eq!(plugins.len(), 15);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));
-        assert!(names.contains(&"git-blame"));
         assert!(names.contains(&"gh-issue"));
         assert!(names.contains(&"gh-pr"));
         assert!(names.contains(&"gh-api"));
     }
 
     #[test]
-    fn test_git_blame_has_max_bytes() {
-        let config = load_tool_config("git blame src/main.rs").unwrap();
-        assert_eq!(config.optimize.max_bytes, Some(16384));
-    }
-
-    #[test]
     fn test_builtin_plugins_have_bundles() {
         let plugins = builtin_plugins();
         let git_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "git").collect();
-        assert_eq!(git_plugins.len(), 7);
+        assert_eq!(git_plugins.len(), 3);
         let cargo_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "cargo").collect();
         assert_eq!(cargo_plugins.len(), 3);
         let gh_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "gh").collect();
-        assert_eq!(gh_plugins.len(), 6);
+        assert_eq!(gh_plugins.len(), 5);
     }
 
     #[test]
-    fn test_apply_overrides_max_bytes() {
+    fn test_apply_overrides_max_lines() {
         let mut config = ToolConfig {
-            match_pattern: "git blame".to_string(),
+            match_pattern: "git diff".to_string(),
             optimize: OptimizeConfig {
-                max_bytes: Some(16384),
+                max_lines: Some(200),
                 ..Default::default()
             },
             ..Default::default()
         };
         let overrides = PluginOverrides {
             optimize: Some(crate::types::OptimizeOverrides {
-                max_bytes: Some(32768),
+                max_lines: Some(1000),
                 ..Default::default()
             }),
             ..Default::default()
         };
         apply_overrides(&mut config, &overrides);
-        assert_eq!(config.optimize.max_bytes, Some(32768));
+        assert_eq!(config.optimize.max_lines, Some(1000));
     }
 
     #[test]

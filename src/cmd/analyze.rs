@@ -312,8 +312,8 @@ pub fn report(args: &[String]) {
             if !config.optimize.keep.is_empty() {
                 println!("  keep = {:?}", config.optimize.keep);
             }
-            if let Some(mb) = config.optimize.max_bytes {
-                println!("  max_bytes = {mb}");
+            if let Some(ml) = config.optimize.max_lines {
+                println!("  max_lines = {ml}");
             }
             if !config.transform.add.is_empty() {
                 println!("  transform.add = {:?}", config.transform.add);
@@ -323,7 +323,7 @@ pub fn report(args: &[String]) {
             }
             if config.optimize.strip.is_empty()
                 && config.optimize.keep.is_empty()
-                && config.optimize.max_bytes.is_none()
+                && config.optimize.max_lines.is_none()
                 && config.transform.add.is_empty()
                 && config.transform.remove.is_empty()
             {

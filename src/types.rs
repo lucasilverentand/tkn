@@ -243,7 +243,7 @@ pub struct PluginOverrides {
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct OptimizeOverrides {
-    pub max_bytes: Option<usize>,
+    pub max_lines: Option<usize>,
     pub strip: Option<Vec<String>>,
     pub keep: Option<Vec<String>>,
 }

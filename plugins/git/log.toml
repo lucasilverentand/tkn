@@ -1,4 +1,0 @@
-match = "git log"
-
-[optimize]
-max_bytes = 16384

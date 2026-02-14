@@ -1,4 +1,0 @@
-match = "git blame"
-
-[optimize]
-max_bytes = 16384

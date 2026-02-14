@@ -21,18 +21,13 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
     if let Some(config) = tool_config {
         // Plugin exists → apply its strip/keep filters
         optimized = apply_tool_filters(&optimized, config);
-
-        // Apply plugin's max_bytes truncation if set
-        if let Some(max_bytes) = config.optimize.max_bytes {
-            if optimized.len() > max_bytes {
-                optimized = truncate_middle(&optimized, max_bytes);
-                was_truncated = true;
-            }
-        }
     }
 
-    // Global line cap: truncate to MAX_OUTPUT_LINES (keeping head + tail)
-    let (truncated_content, line_truncated) = truncate_lines(&optimized, MAX_OUTPUT_LINES);
+    // Line cap: use plugin's max_lines if set, otherwise the global default
+    let line_limit = tool_config
+        .and_then(|c| c.optimize.max_lines)
+        .unwrap_or(MAX_OUTPUT_LINES);
+    let (truncated_content, line_truncated) = truncate_lines(&optimized, line_limit);
     optimized = truncated_content;
     was_truncated = was_truncated || line_truncated;
 
@@ -44,75 +39,6 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
         optimized_bytes,
         was_truncated,
     }
-}
-
-/// Truncate by removing the middle of the output, keeping the beginning and end
-/// which typically carry the most useful signal (headers, context, results, errors).
-fn truncate_middle(input: &str, max_bytes: usize) -> String {
-    let lines: Vec<&str> = input.lines().collect();
-
-    if lines.len() <= 2 {
-        let mut out = input[..max_bytes].to_string();
-        if let Some(pos) = out.rfind('\n') {
-            out.truncate(pos + 1);
-        }
-        out.push_str("\n[... truncated ...]");
-        return out;
-    }
-
-    // Budget: ~40% bytes each for head and tail, capped at 100 lines each
-    let half_budget = max_bytes * 2 / 5;
-    let max_section_lines = 100;
-
-    // Collect head lines up to budget
-    let mut head = String::new();
-    let mut head_count = 0;
-    for line in &lines {
-        if head_count >= max_section_lines {
-            break;
-        }
-        let next = if head.is_empty() {
-            line.len()
-        } else {
-            head.len() + 1 + line.len()
-        };
-        if next > half_budget && head_count > 0 {
-            break;
-        }
-        if !head.is_empty() {
-            head.push('\n');
-        }
-        head.push_str(line);
-        head_count += 1;
-    }
-
-    // Collect tail lines up to budget (from the end, skip what head already took)
-    let mut tail_lines: Vec<&str> = Vec::new();
-    let mut tail_bytes = 0;
-    for line in lines[head_count..].iter().rev() {
-        if tail_lines.len() >= max_section_lines {
-            break;
-        }
-        let next = if tail_bytes == 0 {
-            line.len()
-        } else {
-            tail_bytes + 1 + line.len()
-        };
-        if next > half_budget && !tail_lines.is_empty() {
-            break;
-        }
-        tail_lines.push(line);
-        tail_bytes = next;
-    }
-    tail_lines.reverse();
-
-    let omitted = lines.len() - head_count - tail_lines.len();
-    let separator = format!("\n[... {} lines omitted ...]\n", omitted);
-
-    let mut result = head;
-    result.push_str(&separator);
-    result.push_str(&tail_lines.join("\n"));
-    result
 }
 
 /// Truncate by line count, keeping head and tail lines with a separator in the middle.
@@ -188,8 +114,6 @@ mod tests {
     fn test_strip_lines() {
         let config = config_with_optimize(OptimizeConfig {
             strip: vec![r"^index [a-f0-9]+".into(), r"^diff --git".into()],
-            keep: vec![],
-            max_bytes: None,
             ..Default::default()
         });
 
@@ -204,9 +128,7 @@ mod tests {
     #[test]
     fn test_keep_lines() {
         let config = config_with_optimize(OptimizeConfig {
-            strip: vec![],
             keep: vec![r"^\+".into(), r"^@@".into()],
-            max_bytes: None,
             ..Default::default()
         });
 
@@ -223,7 +145,6 @@ mod tests {
         let config = config_with_optimize(OptimizeConfig {
             strip: vec![r"foo".into()],
             keep: vec![r"bar".into()],
-            max_bytes: None,
             ..Default::default()
         });
 
@@ -233,11 +154,9 @@ mod tests {
     }
 
     #[test]
-    fn test_custom_max_bytes() {
+    fn test_custom_max_lines() {
         let config = config_with_optimize(OptimizeConfig {
-            strip: vec![],
-            keep: vec![],
-            max_bytes: Some(50),
+            max_lines: Some(10),
             ..Default::default()
         });
 
@@ -246,6 +165,20 @@ mod tests {
         let result = run_pipeline(raw, Some(&config));
         assert!(result.was_truncated);
         assert!(result.content.contains("omitted"));
+    }
+
+    #[test]
+    fn test_max_lines_allows_longer_output() {
+        let config = config_with_optimize(OptimizeConfig {
+            max_lines: Some(1000),
+            ..Default::default()
+        });
+
+        let input = "a\n".repeat(600);
+        let raw = input.as_bytes();
+        let result = run_pipeline(raw, Some(&config));
+        // 600 lines is under the plugin's 1000 limit, so no truncation
+        assert!(!result.was_truncated);
     }
 
     #[test]
@@ -280,17 +213,6 @@ mod tests {
         let input = "\x1b[32mhello\x1b[0m\n";
         let result = run_pipeline(input.as_bytes(), None);
         assert_eq!(result.content, "hello");
-    }
-
-    #[test]
-    fn test_truncate_middle_keeps_head_and_tail() {
-        let lines: Vec<String> = (1..=50).map(|i| format!("line {i}")).collect();
-        let input = lines.join("\n");
-        let result = truncate_middle(&input, 200);
-        assert!(result.starts_with("line 1\n"));
-        assert!(result.contains("omitted"));
-        assert!(result.ends_with("line 50"));
-        assert!(!result.contains("line 25"));
     }
 
     #[test]
