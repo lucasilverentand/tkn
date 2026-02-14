@@ -40,6 +40,10 @@ pub struct OptimizeConfig {
     pub keep: Vec<String>,
 
     pub max_bytes: Option<usize>,
+
+    /// Skip blank-line collapse and trailing-whitespace trim (only ANSI strip + CR resolve).
+    #[serde(default)]
+    pub raw: bool,
 }
 
 /// Returns all built-in plugins as (bundle, name, toml_content) triples.

@@ -1,57 +1,45 @@
 mod basic;
-mod dedup;
 
 use regex::Regex;
 
 use crate::tool_config::ToolConfig;
 use crate::types::OptimizedOutput;
 
-pub use basic::BasicOptimizer;
-pub use dedup::DedupOptimizer;
-
-pub trait Optimizer {
-    fn optimize(&self, raw: &str) -> String;
-}
-
-const MAX_OUTPUT_BYTES: usize = 8 * 1024;
-
-const SHORT_LINE_THRESHOLD: usize = 20;
+pub use basic::strip_ansi;
 
 pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOutput {
     let raw_str = String::from_utf8_lossy(raw);
     let original_bytes = raw.len();
-    let has_plugin = tool_config.is_some();
 
-    // Short output with no specific plugin: pass through as-is
-    if !has_plugin && raw_str.lines().count() <= SHORT_LINE_THRESHOLD {
-        let content = raw_str.into_owned();
-        let optimized_bytes = content.len();
+    // Always: strip ANSI + resolve \r. Unless plugin opts into raw, also trim whitespace + collapse blanks.
+    let raw_mode = tool_config.map_or(false, |c| c.optimize.raw);
+    let mut optimized = strip_ansi(&raw_str, raw_mode);
+
+    // No plugin → return cleaned output as-is (no truncation, no filters)
+    let Some(config) = tool_config else {
+        let optimized_bytes = optimized.len();
         return OptimizedOutput {
-            content,
+            content: optimized,
             original_bytes,
             optimized_bytes,
             was_truncated: false,
         };
-    }
+    };
 
-    let basic = BasicOptimizer::new();
-    let dedup = DedupOptimizer::new();
-    let mut optimized = basic.optimize(&raw_str);
-    optimized = dedup.optimize(&optimized);
+    // Plugin exists → apply its strip/keep filters
+    optimized = apply_tool_filters(&optimized, config);
 
-    // Apply tool-specific strip/keep filters
-    if let Some(config) = tool_config {
-        optimized = apply_tool_filters(&optimized, config);
-    }
-
-    let max_bytes = tool_config
-        .and_then(|c| c.optimize.max_bytes)
-        .unwrap_or(MAX_OUTPUT_BYTES);
-
-    let was_truncated = optimized.len() > max_bytes;
-    if was_truncated {
-        optimized = truncate_middle(&optimized, max_bytes);
-    }
+    // Apply plugin's max_bytes truncation if set
+    let was_truncated = if let Some(max_bytes) = config.optimize.max_bytes {
+        if optimized.len() > max_bytes {
+            optimized = truncate_middle(&optimized, max_bytes);
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
 
     let optimized_bytes = optimized.len();
 
@@ -185,6 +173,7 @@ mod tests {
             strip: vec![r"^index [a-f0-9]+".into(), r"^diff --git".into()],
             keep: vec![],
             max_bytes: None,
+            ..Default::default()
         });
 
         let input = "diff --git a/foo b/foo\nindex abc123..def456 100644\n--- a/foo\n+++ b/foo\n+new line";
@@ -201,6 +190,7 @@ mod tests {
             strip: vec![],
             keep: vec![r"^\+".into(), r"^@@".into()],
             max_bytes: None,
+            ..Default::default()
         });
 
         let input = "diff --git a/foo b/foo\n@@ -1,3 +1,4 @@\n context\n+added line\n-removed line";
@@ -217,6 +207,7 @@ mod tests {
             strip: vec![r"foo".into()],
             keep: vec![r"bar".into()],
             max_bytes: None,
+            ..Default::default()
         });
 
         let input = "foo line\nbar line\nbaz line";
@@ -230,6 +221,7 @@ mod tests {
             strip: vec![],
             keep: vec![],
             max_bytes: Some(50),
+            ..Default::default()
         });
 
         let input = "a\n".repeat(100);
@@ -240,12 +232,27 @@ mod tests {
     }
 
     #[test]
-    fn test_no_tool_config_uses_default_max() {
+    fn test_no_tool_config_no_truncation() {
+        // Without a plugin, output passes through without truncation
         let input = "a\n".repeat(10000);
         let raw = input.as_bytes();
-        let result = run_pipeline(raw,None);
-        // Default is 8KB, input is ~20KB
-        assert!(result.was_truncated);
+        let result = run_pipeline(raw, None);
+        assert!(!result.was_truncated);
+    }
+
+    #[test]
+    fn test_no_plugin_passthrough() {
+        let input = "hello\nworld\n";
+        let result = run_pipeline(input.as_bytes(), None);
+        assert_eq!(result.content, "hello\nworld");
+        assert!(!result.was_truncated);
+    }
+
+    #[test]
+    fn test_no_plugin_strips_ansi() {
+        let input = "\x1b[32mhello\x1b[0m\n";
+        let result = run_pipeline(input.as_bytes(), None);
+        assert_eq!(result.content, "hello");
     }
 
     #[test]
@@ -256,7 +263,6 @@ mod tests {
         assert!(result.starts_with("line 1\n"));
         assert!(result.contains("omitted"));
         assert!(result.ends_with("line 50"));
-        // Should not contain middle lines
         assert!(!result.contains("line 25"));
     }
 
