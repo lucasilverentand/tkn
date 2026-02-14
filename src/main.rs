@@ -48,6 +48,11 @@ enum Commands {
         #[command(subcommand)]
         action: AnalyzeAction,
     },
+    /// Replay a stored command through the current optimizer pipeline
+    Replay {
+        /// Reference ID of the log entry to replay
+        id: String,
+    },
     /// Manage tool plugins
     Plugin {
         #[command(subcommand)]
@@ -126,6 +131,10 @@ fn main() {
                 AnalyzeAction::Scan => cmd::analyze::scan(),
                 AnalyzeAction::Report { args } => cmd::analyze::report(&args),
             }
+            0
+        }
+        Commands::Replay { id } => {
+            cmd::replay::run(&id);
             0
         }
         Commands::Plugin { action } => {
