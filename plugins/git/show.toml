@@ -1,5 +1,10 @@
 match = "git show"
 
-[transform]
-add = ["--no-color|--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
+[optimize]
+strip = [
+    "^diff --git ",
+    "^index [a-f0-9]",
+    "^(old|new) mode ",
+    "^(new file|deleted file) mode ",
+]
+max_bytes = 32768

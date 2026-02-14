@@ -75,6 +75,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("head", "head", include_str!("../plugins/head/head.toml")),
         ("tail", "tail", include_str!("../plugins/tail/tail.toml")),
         ("wc", "wc", include_str!("../plugins/wc/wc.toml")),
+        ("ls", "ls", include_str!("../plugins/ls/ls.toml")),
     ]
 }
 
@@ -206,14 +207,14 @@ mod tests {
     fn test_load_default_git_diff() {
         let config = load_tool_config("git diff src/main.rs").unwrap();
         assert_eq!(config.match_pattern, "git diff");
-        assert!(config.transform.add.contains(&"--no-color|--color=never".to_string()));
+        assert!(!config.optimize.strip.is_empty());
     }
 
     #[test]
     fn test_load_default_cargo_build() {
         let config = load_tool_config("cargo build --release").unwrap();
         assert_eq!(config.match_pattern, "cargo build");
-        assert!(config.transform.add.contains(&"--color=never".to_string()));
+        assert!(!config.optimize.keep.is_empty());
         assert!(!config.optimize.keep.is_empty());
     }
 
@@ -241,7 +242,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 26);
+        assert_eq!(plugins.len(), 27);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));

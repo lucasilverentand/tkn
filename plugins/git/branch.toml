@@ -1,5 +1,1 @@
 match = "git branch"
-
-[transform]
-add = ["--no-color|--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }

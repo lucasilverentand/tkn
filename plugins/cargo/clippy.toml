@@ -1,13 +1,11 @@
 match = "cargo clippy"
 
-[transform]
-add = ["--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
-
 [optimize]
 strip = [
     "^\\s*Compiling\\s",
     "^\\s*Checking\\s",
     "^\\s*Downloading\\s",
+    "^\\s*Downloaded\\s",
     "^\\s*Finished\\s",
+    "^\\s*Locking\\s",
 ]

@@ -1,11 +1,12 @@
 match = "cargo test"
 
-[transform]
-add = ["--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
-
 [optimize]
 strip = [
     "^test .+ \\.\\.\\. ok$",
     "^\\s*Finished\\s",
+    "^\\s*Compiling\\s",
+    "^\\s*Running\\s+(unittests|tests)\\s",
+    "^\\s*Doc-tests\\s",
+    "^\\s*Downloading\\s",
+    "^\\s*Downloaded\\s",
 ]

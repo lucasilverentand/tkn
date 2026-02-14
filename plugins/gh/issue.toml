@@ -1,8 +1,5 @@
 match = "gh issue"
 
-[transform]
-add = ["--no-color"]
-
 [optimize]
 strip = [
     "^—+$",

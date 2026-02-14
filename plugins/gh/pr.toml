@@ -1,8 +1,5 @@
 match = "gh pr"
 
-[transform]
-add = ["--no-color"]
-
 [optimize]
 strip = [
     "^—+$",

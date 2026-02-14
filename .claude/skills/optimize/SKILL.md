@@ -8,7 +8,7 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
 ## Key Constraints
 
 - Write plugins to `plugins/` (builtin), **never** `~/.tkn/tools/`
-- Apple Git doesn't support `--no-color` on `git status` or `git blame` — don't add it
+- **Never add color-related transforms** — tkn strips ANSI escape codes automatically in post-processing (`strip_ansi`), so `--no-color`, `--color=never`, etc. are unnecessary and can cause compatibility issues (e.g., Apple Git)
 - The global 500-line cap exists as a safety net — plugins should aim well under it
 - Always read an existing plugin TOML before modifying it
 - Always use `tkn replay` to validate changes against real data
@@ -21,10 +21,11 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
    - If past runs exist: use `tkn replay <ref_id>` on representative samples (pick small/medium/large based on the analyze report stats)
    - If no past runs: research the tool's output format (web search for typical output), then either run the command if it's read-only or ask the user to run it
 
-3. **Research transforms** — Web search for the tool's CLI flags that reduce noise (color, formatting, verbosity flags). Propose `[transform]` rules:
-   - `add` — flags to inject (e.g., `"--no-color"`, `"--color=never"`)
+3. **Research transforms** — Web search for the tool's CLI flags that reduce noise (formatting, verbosity flags). Propose `[transform]` rules:
+   - `add` — flags to inject (e.g., `"--short"`, `"--quiet"`)
    - `remove` — flags to strip (e.g., `"--verbose"`)
    - `replace` — flag substitutions (e.g., `{"--format=table" = "--format=json"}`)
+   - **Do NOT add color flags** — ANSI stripping is handled automatically by tkn
 
 4. **Decide strip vs keep strategy:**
    - If output is mostly noise with a few useful signal lines → use `keep` (allowlist)
@@ -36,7 +37,7 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
    match = "<tool> <subcommand>"
 
    [transform]
-   add = ["--flag1", "--flag2"]
+   add = ["--quiet"]
    remove = ["--verbose"]
 
    [optimize]
@@ -74,8 +75,8 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
 match = "git diff"
 
 [transform]
-add = ["--no-color|--color=never"]  # pipe-separated aliases (avoids duplicates)
-remove = ["--stat"]
+add = ["--short|-s"]         # pipe-separated aliases (avoids duplicates)
+remove = ["--verbose"]
 replace = { "--format=table" = "--format=json" }
 
 [optimize]
@@ -85,6 +86,7 @@ max_bytes = 16384                              # truncate output beyond this
 raw = false                                    # set true to skip blank-line collapse
 ```
 
+- **No color flags** — tkn strips ANSI codes automatically; never use `--no-color`, `--color=never`, etc.
 - `strip` and `keep` are mutually exclusive strategies — use one or the other
 - `keep` wins if both are present (lines must match a keep pattern)
 - `max_bytes` triggers middle-truncation (40% head / 40% tail / 20% separator)

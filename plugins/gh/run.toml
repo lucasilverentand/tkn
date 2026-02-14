@@ -1,8 +1,5 @@
 match = "gh run"
 
-[transform]
-add = ["--no-color"]
-
 [optimize]
 strip = [
     "^—+$",

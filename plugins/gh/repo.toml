@@ -1,8 +1,5 @@
 match = "gh repo"
 
-[transform]
-add = ["--no-color"]
-
 [optimize]
 strip = [
     "^—+$",

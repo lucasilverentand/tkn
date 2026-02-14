@@ -1,9 +1,5 @@
 match = "cargo build"
 
-[transform]
-add = ["--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
-
 [optimize]
 keep = [
     "(?i)error",

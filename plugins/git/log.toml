@@ -1,5 +1,4 @@
 match = "git log"
 
-[transform]
-add = ["--no-color|--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
+[optimize]
+max_bytes = 16384

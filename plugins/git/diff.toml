@@ -1,5 +1,12 @@
 match = "git diff"
 
-[transform]
-add = ["--no-color|--color=never"]
-replace = { "--color=auto" = "--color=never", "--color=always" = "--color=never" }
+[optimize]
+strip = [
+    "^diff --git ",
+    "^index [a-f0-9]",
+    "^(old|new) mode ",
+    "^similarity index ",
+    "^rename (from|to) ",
+    "^copy (from|to) ",
+]
+max_bytes = 32768
