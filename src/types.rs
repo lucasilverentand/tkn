@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -62,59 +62,6 @@ impl Analytics {
     }
 }
 
-/// Commands that have meaningful subcommands worth preserving.
-const SUBCOMMAND_TOOLS: &[(&str, &[&str])] = &[
-    ("git", &["add", "bisect", "blame", "branch", "checkout", "cherry-pick", "clone",
-              "commit", "config", "diff", "fetch", "init", "log", "merge", "mv",
-              "pull", "push", "rebase", "reflog", "remote", "reset", "restore",
-              "revert", "rm", "show", "stash", "status", "submodule", "switch", "tag",
-              "worktree"]),
-    ("cargo", &["build", "test", "run", "check", "clippy", "fmt", "bench", "doc",
-                "publish", "install", "update", "add", "remove", "init", "new", "clean"]),
-    ("npm", &["install", "run", "test", "build", "publish", "init", "update", "ci",
-              "exec", "start", "pack", "link", "uninstall", "audit"]),
-    ("npx", &[]),
-    ("yarn", &["add", "remove", "install", "run", "build", "test", "init", "publish"]),
-    ("pnpm", &["add", "remove", "install", "run", "build", "test", "init", "publish",
-               "exec", "dlx"]),
-    ("docker", &["build", "run", "push", "pull", "exec", "compose", "stop", "start",
-                 "logs", "ps", "images", "volume", "network", "system"]),
-    ("kubectl", &["get", "apply", "delete", "describe", "logs", "exec", "create",
-                  "edit", "scale", "rollout", "port-forward", "config"]),
-    ("brew", &["install", "uninstall", "update", "upgrade", "search", "info",
-               "list", "tap", "cask", "services"]),
-    ("apt", &["install", "remove", "update", "upgrade", "search", "list", "purge"]),
-    ("pip", &["install", "uninstall", "freeze", "list", "show", "search"]),
-    ("pip3", &["install", "uninstall", "freeze", "list", "show", "search"]),
-    ("go", &["build", "test", "run", "get", "mod", "fmt", "vet", "install", "generate"]),
-    ("rustup", &["update", "default", "target", "component", "toolchain", "override"]),
-    ("make", &[]),
-    ("systemctl", &["start", "stop", "restart", "status", "enable", "disable",
-                    "reload", "daemon-reload"]),
-    ("gh", &["pr", "issue", "repo", "auth", "api", "run", "release", "gist",
-             "codespace", "workflow"]),
-    ("az", &["login", "group", "vm", "storage", "webapp", "acr", "aks"]),
-    ("aws", &["s3", "ec2", "iam", "lambda", "ecs", "cloudformation", "sts",
-              "ssm", "logs"]),
-    ("gcloud", &["auth", "config", "compute", "container", "functions", "run",
-                 "app", "builds"]),
-    ("terraform", &["init", "plan", "apply", "destroy", "validate", "fmt",
-                    "import", "state", "output"]),
-    ("helm", &["install", "upgrade", "uninstall", "repo", "list", "rollback",
-               "template", "lint", "package"]),
-    // Apple/Xcode toolchain
-    ("xcodebuild", &["build", "test", "clean", "archive", "analyze",
-                     "build-for-testing", "test-without-building"]),
-    ("xcresulttool", &["get", "export", "merge", "format"]),
-    ("swift", &["build", "test", "run", "package"]),
-    ("xctrace", &["record", "export", "list"]),
-    ("swiftlint", &["lint", "analyze", "rules"]),
-    // Package managers / build tools
-    ("pod", &["install", "update", "init", "repo", "spec", "lib"]),
-    ("flutter", &["build", "test", "run", "analyze", "pub", "create", "doctor"]),
-    ("gradlew", &["build", "test", "assemble", "clean", "check"]),
-    ("bazel", &["build", "test", "run", "query", "clean", "fetch", "info"]),
-];
 
 /// Commands that wrap/delegate to another command.
 /// Each entry: (name, flags_that_consume_next_arg, skip_positional_count).
@@ -145,7 +92,11 @@ const PREFIX_COMMANDS: &[(&str, &[&str], usize)] = &[
 ///      "EDITOR=vim git commit" -> "git commit"
 ///      "script -q /tmp/log xcodebuild test" -> "xcodebuild test"
 ///      "xcrun --sdk iphoneos xcodebuild build" -> "xcodebuild build"
-pub fn normalize_tool(command: &str) -> String {
+///
+/// When `patterns` is provided, uses longest-prefix matching against registered
+/// plugin match patterns for multi-level subcommand detection (e.g. "xcresulttool get test-results").
+/// When no pattern matches, falls back to base + first non-flag non-path word.
+pub fn normalize_tool(command: &str, patterns: &HashSet<String>) -> String {
     let words: Vec<&str> = command.trim().split_whitespace().collect();
     let mut i = 0;
 
@@ -197,31 +148,46 @@ pub fn normalize_tool(command: &str) -> String {
     let base = words[i].rsplit('/').next().unwrap_or(words[i]);
     i += 1;
 
-    // Phase 3: For subcommand tools, find the subcommand
-    if let Some(&(_, known_subs)) = SUBCOMMAND_TOOLS.iter().find(|&&(name, _)| name == base) {
-        let mut skip_next = false;
-        for &part in &words[i..] {
-            if skip_next {
-                skip_next = false;
-                continue;
-            }
-            if part.starts_with('-') {
-                // Short flags like -C often take a value argument
-                if part.len() == 2 {
-                    skip_next = true;
-                }
-                continue;
-            }
-            // Skip things that look like paths or values, not subcommands
-            if part.contains('/') || part.contains('.') || part.contains('=') {
-                continue;
-            }
-            // If we have a known subcommand list, validate against it
-            if !known_subs.is_empty() && !known_subs.contains(&part) {
-                continue;
-            }
-            return format!("{base} {part}");
+    // Phase 3: Collect candidate subcommand tokens (skip flags and paths)
+    let mut sub_tokens: Vec<&str> = Vec::new();
+    let mut skip_next = false;
+    for &part in &words[i..] {
+        if skip_next {
+            skip_next = false;
+            continue;
         }
+        if part.starts_with('-') {
+            if part.len() == 2 {
+                skip_next = true;
+            }
+            continue;
+        }
+        if part.contains('/') || part.contains('.') || part.contains('=') {
+            continue;
+        }
+        sub_tokens.push(part);
+    }
+
+    // Phase 4: Longest-prefix match against registered patterns
+    if !patterns.is_empty() {
+        for len in (1..=sub_tokens.len()).rev() {
+            let candidate = std::iter::once(base)
+                .chain(sub_tokens[..len].iter().copied())
+                .collect::<Vec<_>>()
+                .join(" ");
+            if patterns.contains(&candidate) {
+                return candidate;
+            }
+        }
+        // Check if just the base matches a pattern
+        if patterns.contains(base) {
+            return base.to_string();
+        }
+    }
+
+    // Phase 5: Fallback — base + first subcommand token (preserves behavior for unregistered tools)
+    if let Some(&first_sub) = sub_tokens.first() {
+        return format!("{base} {first_sub}");
     }
 
     base.to_string()
@@ -286,110 +252,169 @@ pub struct OptimizeOverrides {
 mod tests {
     use super::*;
 
+    /// Helper: builds a pattern set from a list of match strings.
+    fn patterns(pats: &[&str]) -> HashSet<String> {
+        pats.iter().map(|s| s.to_string()).collect()
+    }
+
+    /// Patterns matching the builtin plugins.
+    fn default_patterns() -> HashSet<String> {
+        patterns(&[
+            "git diff", "git log", "git status", "git show", "git blame",
+            "git branch", "git stash",
+            "cargo build", "cargo test", "cargo clippy",
+            "gh issue", "gh pr", "gh repo", "gh run", "gh workflow", "gh api",
+        ])
+    }
+
     #[test]
     fn test_normalize_simple() {
-        assert_eq!(normalize_tool("ls -la /some/path"), "ls");
-        assert_eq!(normalize_tool("cat foo.txt"), "cat");
-        assert_eq!(normalize_tool("echo hello world"), "echo");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("ls -la /some/path", &p), "ls");
+        assert_eq!(normalize_tool("cat foo.txt", &p), "cat");
+        assert_eq!(normalize_tool("echo hello world", &p), "echo hello");
     }
 
     #[test]
     fn test_normalize_subcommand() {
-        assert_eq!(normalize_tool("git diff src/main.rs"), "git diff");
-        assert_eq!(normalize_tool("git commit -m 'msg'"), "git commit");
-        assert_eq!(normalize_tool("cargo build --release"), "cargo build");
-        assert_eq!(normalize_tool("docker run -it ubuntu"), "docker run");
-        assert_eq!(normalize_tool("npm install express"), "npm install");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("git diff src/main.rs", &p), "git diff");
+        assert_eq!(normalize_tool("git commit -m 'msg'", &p), "git commit");
+        assert_eq!(normalize_tool("cargo build --release", &p), "cargo build");
+        assert_eq!(normalize_tool("docker run -it ubuntu", &p), "docker run");
+        assert_eq!(normalize_tool("npm install express", &p), "npm install");
     }
 
     #[test]
     fn test_normalize_env_prefix() {
-        assert_eq!(normalize_tool("EDITOR=vim git commit"), "git commit");
-        assert_eq!(normalize_tool("FOO=1 BAR=2 ls"), "ls");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("EDITOR=vim git commit", &p), "git commit");
+        assert_eq!(normalize_tool("FOO=1 BAR=2 ls", &p), "ls");
     }
 
     #[test]
     fn test_normalize_sudo() {
-        assert_eq!(normalize_tool("sudo git push"), "git push");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("sudo git push", &p), "git push");
     }
 
     #[test]
     fn test_normalize_flags_before_subcommand() {
-        assert_eq!(normalize_tool("git -C /repo diff"), "git diff");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("git -C /repo diff", &p), "git diff");
     }
 
     #[test]
     fn test_normalize_path_prefix() {
-        assert_eq!(normalize_tool("/usr/bin/git status"), "git status");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("/usr/bin/git status", &p), "git status");
     }
 
     #[test]
     fn test_normalize_transparent_prefixes() {
-        assert_eq!(normalize_tool("nice -n 10 cargo build"), "cargo build");
-        assert_eq!(normalize_tool("nohup python3 server.py"), "python3");
-        assert_eq!(normalize_tool("time cargo test"), "cargo test");
-        assert_eq!(normalize_tool("caffeinate cargo build --release"), "cargo build");
+        let p = default_patterns();
+        assert_eq!(normalize_tool("nice -n 10 cargo build", &p), "cargo build");
+        assert_eq!(normalize_tool("nohup python3 server.py", &p), "python3");
+        assert_eq!(normalize_tool("time cargo test", &p), "cargo test");
+        assert_eq!(normalize_tool("caffeinate cargo build --release", &p), "cargo build");
     }
 
     #[test]
     fn test_normalize_script_wrapper() {
+        let p = default_patterns();
         assert_eq!(
-            normalize_tool("script -q /tmp/st9.log xcodebuild test -scheme Foo"),
+            normalize_tool("script -q /tmp/st9.log xcodebuild test -scheme Foo", &p),
             "xcodebuild test"
         );
         assert_eq!(
-            normalize_tool("script /tmp/log ls -la"),
+            normalize_tool("script /tmp/log ls -la", &p),
             "ls"
         );
         assert_eq!(
-            normalize_tool("script -q -a /tmp/log git diff"),
+            normalize_tool("script -q -a /tmp/log git diff", &p),
             "git diff"
         );
     }
 
     #[test]
     fn test_normalize_xcrun_wrapper() {
+        let p = patterns(&["xcresulttool get test-results", "xcresulttool get", "xcresulttool export", "xcodebuild build"]);
         assert_eq!(
-            normalize_tool("xcrun xcresulttool get test-results summary --path /foo"),
-            "xcresulttool get"
+            normalize_tool("xcrun xcresulttool get test-results summary --path /foo", &p),
+            "xcresulttool get test-results"
         );
         assert_eq!(
-            normalize_tool("xcrun --sdk iphoneos xcodebuild build"),
+            normalize_tool("xcrun --sdk iphoneos xcodebuild build", &p),
             "xcodebuild build"
         );
         assert_eq!(
-            normalize_tool("xcrun -v xcresulttool export"),
+            normalize_tool("xcrun -v xcresulttool export", &p),
             "xcresulttool export"
         );
     }
 
     #[test]
     fn test_normalize_nested_wrappers() {
+        let p = patterns(&["xcresulttool get", "cargo build"]);
         assert_eq!(
-            normalize_tool("script -q /tmp/log xcrun xcresulttool get"),
+            normalize_tool("script -q /tmp/log xcrun xcresulttool get", &p),
             "xcresulttool get"
         );
         assert_eq!(
-            normalize_tool("sudo nice -n 5 cargo build"),
+            normalize_tool("sudo nice -n 5 cargo build", &p),
             "cargo build"
         );
     }
 
     #[test]
     fn test_normalize_apple_toolchain() {
+        let p = patterns(&["xcodebuild test", "swift build", "swift package", "pod install", "flutter test"]);
         assert_eq!(
-            normalize_tool("xcodebuild test -scheme PentaPrism"),
+            normalize_tool("xcodebuild test -scheme PentaPrism", &p),
             "xcodebuild test"
         );
-        assert_eq!(normalize_tool("swift build"), "swift build");
-        assert_eq!(normalize_tool("swift package resolve"), "swift package");
-        assert_eq!(normalize_tool("pod install"), "pod install");
-        assert_eq!(normalize_tool("flutter test --coverage"), "flutter test");
+        assert_eq!(normalize_tool("swift build", &p), "swift build");
+        assert_eq!(normalize_tool("swift package resolve", &p), "swift package");
+        assert_eq!(normalize_tool("pod install", &p), "pod install");
+        assert_eq!(normalize_tool("flutter test --coverage", &p), "flutter test");
     }
 
     #[test]
     fn test_normalize_build_tools() {
-        assert_eq!(normalize_tool("bazel build //src:target"), "bazel build");
-        assert_eq!(normalize_tool("bazel test //tests:all"), "bazel test");
+        let p = patterns(&["bazel build", "bazel test"]);
+        assert_eq!(normalize_tool("bazel build //src:target", &p), "bazel build");
+        assert_eq!(normalize_tool("bazel test //tests:all", &p), "bazel test");
+    }
+
+    #[test]
+    fn test_normalize_deep_subcommand() {
+        // Multi-level: "xcresulttool get test-results" matches deeper than "xcresulttool get"
+        let p = patterns(&["xcresulttool get", "xcresulttool get test-results"]);
+        assert_eq!(
+            normalize_tool("xcresulttool get test-results summary --path /foo", &p),
+            "xcresulttool get test-results"
+        );
+        // Falls back to shorter match when deeper doesn't exist
+        assert_eq!(
+            normalize_tool("xcresulttool get export-data --verbose", &p),
+            "xcresulttool get"
+        );
+    }
+
+    #[test]
+    fn test_normalize_unknown_fallback() {
+        // Unknown tool with no matching pattern: base + first subcommand token
+        let p = default_patterns();
+        assert_eq!(normalize_tool("terraform plan --var-file=prod", &p), "terraform plan");
+        assert_eq!(normalize_tool("kubectl get pods", &p), "kubectl get");
+        assert_eq!(normalize_tool("aws s3 cp file s3://bucket", &p), "aws s3");
+    }
+
+    #[test]
+    fn test_normalize_empty_patterns() {
+        // With empty patterns, still gets base + first subcommand fallback
+        let p = HashSet::new();
+        assert_eq!(normalize_tool("git diff src/main.rs", &p), "git diff");
+        assert_eq!(normalize_tool("ls -la", &p), "ls");
     }
 }

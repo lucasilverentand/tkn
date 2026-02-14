@@ -16,7 +16,8 @@ pub fn run(args: &[String]) -> i32 {
     }
 
     // Load tool config and transform command if rules exist
-    let config = tool_config::load_tool_config(&command);
+    let patterns = tool_config::collect_patterns();
+    let config = tool_config::load_tool_config_with_patterns(&command, &patterns);
     let actual_command = match &config {
         Some(cfg) => transformer::transform_command(&command, cfg),
         None => command.clone(),
@@ -57,7 +58,7 @@ pub fn run(args: &[String]) -> i32 {
     }
 
     // Update analytics (best-effort)
-    if let Err(e) = storage.update_analytics(&log_entry) {
+    if let Err(e) = storage.update_analytics_with_patterns(&log_entry, &patterns) {
         eprintln!("tkn: failed to update analytics: {e}");
     }
 

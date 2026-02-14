@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 
@@ -79,6 +79,30 @@ fn load_defaults() -> Vec<ToolConfig> {
         .collect()
 }
 
+/// Collect all match patterns from builtin + user plugins into a set.
+pub fn collect_patterns() -> HashSet<String> {
+    let mut patterns = HashSet::new();
+    // Builtin patterns
+    for config in load_defaults() {
+        patterns.insert(config.match_pattern);
+    }
+    // User-override patterns
+    let dir = user_tools_dir();
+    if let Ok(entries) = fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|e| e == "toml") {
+                if let Ok(content) = fs::read_to_string(&path) {
+                    if let Ok(config) = toml::from_str::<ToolConfig>(&content) {
+                        patterns.insert(config.match_pattern);
+                    }
+                }
+            }
+        }
+    }
+    patterns
+}
+
 fn user_tools_dir() -> PathBuf {
     dirs::home_dir()
         .expect("cannot determine home directory")
@@ -128,7 +152,12 @@ fn apply_overrides(config: &mut ToolConfig, overrides: &PluginOverrides) {
 }
 
 pub fn load_tool_config(command: &str) -> Option<ToolConfig> {
-    let tool_name = normalize_tool(command);
+    let patterns = collect_patterns();
+    load_tool_config_with_patterns(command, &patterns)
+}
+
+pub fn load_tool_config_with_patterns(command: &str, patterns: &HashSet<String>) -> Option<ToolConfig> {
+    let tool_name = normalize_tool(command, patterns);
     let settings = load_settings();
 
     // Derive the plugin key (e.g. "git diff" -> "git-diff")

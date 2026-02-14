@@ -13,10 +13,12 @@ pub fn scan() {
         return;
     }
 
+    let patterns = tool_config::collect_patterns();
+
     // Group entries by normalized tool name
     let mut tools: HashMap<String, ToolSummary> = HashMap::new();
     for entry in &entries {
-        let tool = normalize_tool(&entry.command);
+        let tool = normalize_tool(&entry.command, &patterns);
         let summary = tools.entry(tool).or_default();
         summary.count += 1;
         summary.total_raw += entry.raw_bytes;
@@ -123,13 +125,14 @@ pub fn report(args: &[String]) {
     }
 
     let command = args.join(" ");
-    let tool_name = normalize_tool(&command);
+    let patterns = tool_config::collect_patterns();
+    let tool_name = normalize_tool(&command, &patterns);
     let storage = StorageManager::new();
 
     let entries = storage.list_log_entries().unwrap_or_default();
     let matching: Vec<_> = entries
         .iter()
-        .filter(|e| normalize_tool(&e.command) == tool_name)
+        .filter(|e| normalize_tool(&e.command, &patterns) == tool_name)
         .collect();
 
     if matching.is_empty() {

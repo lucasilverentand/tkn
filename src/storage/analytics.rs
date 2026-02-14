@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::io::Write;
 
@@ -19,7 +20,7 @@ impl StorageManager {
             .unwrap_or_default()
     }
 
-    pub fn update_analytics(&self, entry: &LogEntry) -> std::io::Result<()> {
+    pub fn update_analytics_with_patterns(&self, entry: &LogEntry, patterns: &HashSet<String>) -> std::io::Result<()> {
         let mut analytics = self.read_analytics();
 
         analytics.total_commands += 1;
@@ -28,7 +29,7 @@ impl StorageManager {
         analytics.total_duration_ms += entry.duration_ms;
         analytics.last_updated = Some(Utc::now());
 
-        let tool = normalize_tool(&entry.command);
+        let tool = normalize_tool(&entry.command, patterns);
         let tool_stats = analytics.tools.entry(tool).or_insert_with(ToolStats::default);
         tool_stats.count += 1;
         tool_stats.total_raw_bytes += entry.raw_bytes as u64;
@@ -41,9 +42,9 @@ impl StorageManager {
     }
 
     /// Record that a full log was read for a given command (signals optimizer may strip too much).
-    pub fn record_full_log_read(&self, command: &str) -> std::io::Result<()> {
+    pub fn record_full_log_read(&self, command: &str, patterns: &HashSet<String>) -> std::io::Result<()> {
         let mut analytics = self.read_analytics();
-        let tool = normalize_tool(command);
+        let tool = normalize_tool(command, patterns);
         let tool_stats = analytics.tools.entry(tool).or_insert_with(ToolStats::default);
         tool_stats.full_log_reads += 1;
         self.write_analytics(&analytics)
