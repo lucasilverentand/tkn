@@ -1,6 +1,9 @@
-# Optimize: Author & Audit tkn Plugins
+---
+name: optimize
+description: Create, improve, or audit tkn optimizer plugins. Use when asked to "create a plugin for X", "optimize X output", "audit plugins", "improve the kubectl plugin", etc.
+---
 
-Use this skill when the user wants to create, improve, or audit optimizer plugins for tkn. This includes requests like "create a plugin for X", "optimize X output", "audit plugins", "improve the kubectl plugin", etc.
+# Optimize: Author & Audit tkn Plugins
 
 ## Key Constraints
 
