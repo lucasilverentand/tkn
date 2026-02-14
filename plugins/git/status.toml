@@ -1,4 +1,4 @@
 match = "git status"
 
 [transform]
-add = ["--short"]
+add = ["--short|-s"]

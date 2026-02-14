@@ -25,10 +25,15 @@ pub fn transform_command(command: &str, config: &ToolConfig) -> String {
         }
     }
 
-    // 3. Add: append flags that aren't already present
+    // 3. Add: append flags that aren't already present.
+    //    Supports aliases via pipe separator: "--short|-s" means add "--short"
+    //    only if neither "--short" nor "-s" is already present.
     for flag in &transform.add {
-        if !parts.contains(flag) {
-            parts.push(flag.clone());
+        let variants: Vec<&str> = flag.split('|').collect();
+        let canonical = variants[0];
+        let already_present = variants.iter().any(|v| parts.iter().any(|p| p == v));
+        if !already_present {
+            parts.push(canonical.to_string());
         }
     }
 
@@ -140,6 +145,34 @@ mod tests {
         assert_eq!(
             transform_command("echo hello", &config),
             "echo hello"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_with_alias_already_present() {
+        let config = make_config(vec!["--short|-s"], vec![], vec![]);
+        // -s is an alias for --short, so --short should not be added
+        assert_eq!(
+            transform_command("git status -s", &config),
+            "git status -s"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_with_alias_canonical_present() {
+        let config = make_config(vec!["--short|-s"], vec![], vec![]);
+        assert_eq!(
+            transform_command("git status --short", &config),
+            "git status --short"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_with_alias_none_present() {
+        let config = make_config(vec!["--short|-s"], vec![], vec![]);
+        assert_eq!(
+            transform_command("git status", &config),
+            "git status --short"
         );
     }
 
