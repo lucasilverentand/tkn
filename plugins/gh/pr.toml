@@ -1,0 +1,16 @@
+match = "gh pr"
+
+[transform]
+add = ["--no-color"]
+
+[optimize]
+strip = [
+    "^—+$",
+    "^View this pull request on GitHub:",
+    "^https://github\\.com/",
+    "^No description provided\\.",
+    "^\\s+$",
+    "https://github\\.com/.*/runs/\\d+",
+    "^\\s*Merging is blocked",
+]
+max_bytes = 12288

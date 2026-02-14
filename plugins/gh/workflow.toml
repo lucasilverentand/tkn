@@ -1,0 +1,7 @@
+match = "gh workflow"
+
+[transform]
+add = ["--no-color"]
+
+[optimize]
+max_bytes = 4096

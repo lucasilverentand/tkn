@@ -1,0 +1,14 @@
+match = "gh run"
+
+[transform]
+add = ["--no-color"]
+
+[optimize]
+strip = [
+    "^—+$",
+    "^https://github\\.com/",
+    "^\\s+$",
+    "^\\s*\\d+m\\d+s\\s*$",
+    "Workflow file:",
+]
+max_bytes = 8192

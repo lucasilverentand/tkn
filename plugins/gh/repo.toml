@@ -1,0 +1,13 @@
+match = "gh repo"
+
+[transform]
+add = ["--no-color"]
+
+[optimize]
+strip = [
+    "^—+$",
+    "^View this repository on GitHub:",
+    "^https://github\\.com/",
+    "^\\s+$",
+]
+max_bytes = 8192

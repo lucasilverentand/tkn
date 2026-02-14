@@ -1,0 +1,14 @@
+match = "gh issue"
+
+[transform]
+add = ["--no-color"]
+
+[optimize]
+strip = [
+    "^—+$",
+    "^View this issue on GitHub:",
+    "^https://github\\.com/",
+    "^No description provided\\.",
+    "^\\s+$",
+]
+max_bytes = 12288
