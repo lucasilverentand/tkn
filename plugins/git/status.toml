@@ -1,12 +1,4 @@
 match = "git status"
 
-[optimize]
-strip = [
-    # Hint lines that explain how to use git commands
-    "^\\s+\\(use \"",
-    # "no changes added to commit" summary line
-    "^no changes added to commit",
-    # "nothing to commit" summary line
-    "^nothing to commit",
-    # "Untracked files:" header is followed by the actual files which are kept
-]
+[transform]
+add = ["--short"]
