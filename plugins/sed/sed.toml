@@ -1,0 +1,4 @@
+match = "sed"
+
+[optimize]
+max_bytes = 16384

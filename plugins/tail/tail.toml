@@ -1,0 +1,4 @@
+match = "tail"
+
+[optimize]
+max_bytes = 8192

@@ -1,0 +1,4 @@
+match = "head"
+
+[optimize]
+max_bytes = 8192

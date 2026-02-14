@@ -65,6 +65,16 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("gh", "gh-run", include_str!("../plugins/gh/run.toml")),
         ("gh", "gh-workflow", include_str!("../plugins/gh/workflow.toml")),
         ("gh", "gh-api", include_str!("../plugins/gh/api.toml")),
+        ("find", "find", include_str!("../plugins/find/find.toml")),
+        ("grep", "grep", include_str!("../plugins/grep/grep.toml")),
+        ("sed", "sed", include_str!("../plugins/sed/sed.toml")),
+        ("curl", "curl", include_str!("../plugins/curl/curl.toml")),
+        ("tree", "tree", include_str!("../plugins/tree/tree.toml")),
+        ("du", "du", include_str!("../plugins/du/du.toml")),
+        ("tar", "tar", include_str!("../plugins/tar/tar.toml")),
+        ("head", "head", include_str!("../plugins/head/head.toml")),
+        ("tail", "tail", include_str!("../plugins/tail/tail.toml")),
+        ("wc", "wc", include_str!("../plugins/wc/wc.toml")),
     ]
 }
 
@@ -231,7 +241,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 16);
+        assert_eq!(plugins.len(), 26);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));

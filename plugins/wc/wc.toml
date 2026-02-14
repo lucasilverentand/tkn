@@ -1,0 +1,4 @@
+match = "wc"
+
+[optimize]
+max_bytes = 4096

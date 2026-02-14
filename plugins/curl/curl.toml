@@ -1,0 +1,7 @@
+match = "curl"
+
+[optimize]
+strip = [
+    "^\\s*%",
+    "^\\s*\\d+\\s+\\d+.*--:--:--",
+]

@@ -1,0 +1,7 @@
+match = "find"
+
+[optimize]
+strip = [
+    "Permission denied",
+    "\\.git/objects/[0-9a-f]{2}/[0-9a-f]{38}",
+]
