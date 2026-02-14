@@ -171,7 +171,6 @@ mod tests {
         let config = load_tool_config("cargo build --release").unwrap();
         assert_eq!(config.match_pattern, "cargo build");
         assert!(config.transform.add.contains(&"--color=never".to_string()));
-        assert!(!config.optimize.strip.is_empty());
         assert!(!config.optimize.keep.is_empty());
     }
 

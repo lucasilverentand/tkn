@@ -12,6 +12,9 @@ pub fn run(id: Option<&str>) {
 fn show_log(storage: &StorageManager, ref_id: &str) {
     match storage.read_log_entry(ref_id) {
         Ok(entry) => {
+            // Track that the full log was read (optimizer quality signal)
+            let _ = storage.record_full_log_read(&entry.command);
+
             println!("Ref:      {}", entry.ref_id);
             println!("Command:  {}", entry.command);
             println!("Exit:     {}", entry.exit_code);

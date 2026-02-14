@@ -1,7 +1,4 @@
 match = "git blame"
 
-[transform]
-add = ["--no-color"]
-
 [optimize]
 max_bytes = 16384

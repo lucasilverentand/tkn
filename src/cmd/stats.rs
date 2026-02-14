@@ -55,9 +55,22 @@ pub fn run() {
             } else {
                 0.0
             };
+            let mut extras = Vec::new();
+            if stats.failures > 0 {
+                let fail_rate = (stats.failures as f64 / stats.count as f64) * 100.0;
+                extras.push(format!("{} failures ({:.0}%)", stats.failures, fail_rate));
+            }
+            if stats.full_log_reads > 0 {
+                extras.push(format!("{} full reads", stats.full_log_reads));
+            }
+            let suffix = if extras.is_empty() {
+                String::new()
+            } else {
+                format!("  [{}]", extras.join(", "))
+            };
             println!(
-                "  {:<20} {:>5}x  saved {:.0}%",
-                tool, stats.count, pct
+                "  {:<20} {:>5}x  saved {:.0}%{}",
+                tool, stats.count, pct, suffix
             );
         }
     }
