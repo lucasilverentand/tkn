@@ -167,7 +167,7 @@ mod tests {
     fn test_load_default_git_diff() {
         let config = load_tool_config("git diff src/main.rs").unwrap();
         assert_eq!(config.match_pattern, "git diff");
-        assert!(config.transform.add.contains(&"--no-color".to_string()));
+        assert!(config.transform.add.contains(&"--no-color|--color=never".to_string()));
     }
 
     #[test]
