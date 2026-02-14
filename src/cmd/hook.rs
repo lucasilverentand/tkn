@@ -24,8 +24,11 @@ pub fn run() {
         return;
     }
 
-    // Rewrite command to route through tkn exec
-    let new_command = format!("tkn exec -- {command}");
+    // Pass the original command verbatim via env var so it survives shell
+    // arg-splitting (e.g. multi-word git commit messages keep their quoting).
+    // Single-quote the value, escaping any embedded single quotes.
+    let escaped = command.replace('\'', "'\\''");
+    let new_command = format!("TKN_ORIGINAL_CMD='{escaped}' tkn exec");
     let response = serde_json::json!({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",

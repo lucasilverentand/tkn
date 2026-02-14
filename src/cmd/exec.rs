@@ -8,8 +8,19 @@ use crate::tool_config;
 use crate::transformer;
 use crate::types::{LogEntry, SessionEntry};
 
+/// Environment variable that carries the original command string verbatim
+/// from the hook, bypassing shell arg splitting.
+const ENV_ORIGINAL_CMD: &str = "TKN_ORIGINAL_CMD";
+
 pub fn run(args: &[String]) -> i32 {
-    let command = shell_join(args);
+    // Prefer the env var (set by the hook) so we get the exact command string
+    // without shell arg-splitting losing quoting. Fall back to args for direct
+    // `tkn exec -- <command>` invocations.
+    let command = std::env::var(ENV_ORIGINAL_CMD)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| args.join(" "));
+
     if command.is_empty() {
         eprintln!("tkn: no command provided");
         return 1;
@@ -97,71 +108,4 @@ pub fn run(args: &[String]) -> i32 {
     }
 
     result.exit_code
-}
-
-/// Join args into a shell command string, quoting any arg that contains
-/// shell-special characters so the command survives re-interpretation by `$SHELL -c`.
-fn shell_join(args: &[String]) -> String {
-    args.iter()
-        .map(|arg| {
-            if arg.is_empty() {
-                "''".to_string()
-            } else if needs_quoting(arg) {
-                // Use single quotes; escape any embedded single quotes as '\''
-                format!("'{}'", arg.replace('\'', "'\\''"))
-            } else {
-                arg.clone()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-fn needs_quoting(s: &str) -> bool {
-    s.chars().any(|c| matches!(c,
-        ' ' | '\t' | '\n' | '"' | '\'' | '\\' | '`' | '$' | '!' |
-        '&' | '|' | ';' | '(' | ')' | '<' | '>' | '*' | '?' | '[' |
-        ']' | '#' | '~' | '{' | '}'
-    ))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_shell_join_simple() {
-        let args: Vec<String> = vec!["git", "status"].into_iter().map(String::from).collect();
-        assert_eq!(shell_join(&args), "git status");
-    }
-
-    #[test]
-    fn test_shell_join_quotes_spaces() {
-        let args: Vec<String> = vec!["git", "commit", "-m", "hello world"]
-            .into_iter().map(String::from).collect();
-        assert_eq!(shell_join(&args), "git commit -m 'hello world'");
-    }
-
-    #[test]
-    fn test_shell_join_multiline_message() {
-        let args: Vec<String> = vec!["git", "commit", "-m", "feat: add feature\n\nLong description here.\n\nCo-Authored-By: Test"]
-            .into_iter().map(String::from).collect();
-        let joined = shell_join(&args);
-        assert!(joined.starts_with("git commit -m '"));
-        assert!(joined.contains("feat: add feature"));
-        assert!(joined.ends_with('\''));
-    }
-
-    #[test]
-    fn test_shell_join_embedded_single_quotes() {
-        let args: Vec<String> = vec!["echo", "it's a test"]
-            .into_iter().map(String::from).collect();
-        assert_eq!(shell_join(&args), "echo 'it'\\''s a test'");
-    }
-
-    #[test]
-    fn test_shell_join_empty_arg() {
-        let args: Vec<String> = vec!["echo", ""].into_iter().map(String::from).collect();
-        assert_eq!(shell_join(&args), "echo ''");
-    }
 }
