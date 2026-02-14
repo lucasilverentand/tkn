@@ -7,6 +7,8 @@ use crate::types::OptimizedOutput;
 
 pub use basic::strip_ansi;
 
+const MAX_OUTPUT_LINES: usize = 500;
+
 pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOutput {
     let raw_str = String::from_utf8_lossy(raw);
     let original_bytes = raw.len();
@@ -14,32 +16,25 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
     // Always: strip ANSI + resolve \r. Unless plugin opts into raw, also trim whitespace + collapse blanks.
     let raw_mode = tool_config.map_or(false, |c| c.optimize.raw);
     let mut optimized = strip_ansi(&raw_str, raw_mode);
+    let mut was_truncated = false;
 
-    // No plugin → return cleaned output as-is (no truncation, no filters)
-    let Some(config) = tool_config else {
-        let optimized_bytes = optimized.len();
-        return OptimizedOutput {
-            content: optimized,
-            original_bytes,
-            optimized_bytes,
-            was_truncated: false,
-        };
-    };
+    if let Some(config) = tool_config {
+        // Plugin exists → apply its strip/keep filters
+        optimized = apply_tool_filters(&optimized, config);
 
-    // Plugin exists → apply its strip/keep filters
-    optimized = apply_tool_filters(&optimized, config);
-
-    // Apply plugin's max_bytes truncation if set
-    let was_truncated = if let Some(max_bytes) = config.optimize.max_bytes {
-        if optimized.len() > max_bytes {
-            optimized = truncate_middle(&optimized, max_bytes);
-            true
-        } else {
-            false
+        // Apply plugin's max_bytes truncation if set
+        if let Some(max_bytes) = config.optimize.max_bytes {
+            if optimized.len() > max_bytes {
+                optimized = truncate_middle(&optimized, max_bytes);
+                was_truncated = true;
+            }
         }
-    } else {
-        false
-    };
+    }
+
+    // Global line cap: truncate to MAX_OUTPUT_LINES (keeping head + tail)
+    let (truncated_content, line_truncated) = truncate_lines(&optimized, MAX_OUTPUT_LINES);
+    optimized = truncated_content;
+    was_truncated = was_truncated || line_truncated;
 
     let optimized_bytes = optimized.len();
 
@@ -118,6 +113,28 @@ fn truncate_middle(input: &str, max_bytes: usize) -> String {
     result.push_str(&separator);
     result.push_str(&tail_lines.join("\n"));
     result
+}
+
+/// Truncate by line count, keeping head and tail lines with a separator in the middle.
+/// Returns (output, was_truncated).
+fn truncate_lines(input: &str, max_lines: usize) -> (String, bool) {
+    let lines: Vec<&str> = input.lines().collect();
+    if lines.len() <= max_lines {
+        return (input.to_string(), false);
+    }
+
+    let head_count = max_lines * 2 / 5;
+    let tail_count = max_lines * 2 / 5;
+
+    let head = &lines[..head_count];
+    let tail = &lines[lines.len() - tail_count..];
+    let omitted = lines.len() - head_count - tail_count;
+
+    let mut result = head.join("\n");
+    result.push_str(&format!("\n[... {} lines omitted ...]\n", omitted));
+    result.push_str(&tail.join("\n"));
+
+    (result, true)
 }
 
 fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
@@ -232,12 +249,22 @@ mod tests {
     }
 
     #[test]
-    fn test_no_tool_config_no_truncation() {
-        // Without a plugin, output passes through without truncation
-        let input = "a\n".repeat(10000);
+    fn test_no_tool_config_under_line_cap() {
+        // Without a plugin, short output passes through without truncation
+        let input = "a\n".repeat(100);
         let raw = input.as_bytes();
         let result = run_pipeline(raw, None);
         assert!(!result.was_truncated);
+    }
+
+    #[test]
+    fn test_no_tool_config_over_line_cap() {
+        // Without a plugin, output over 500 lines still gets line-capped
+        let input = "a\n".repeat(1000);
+        let raw = input.as_bytes();
+        let result = run_pipeline(raw, None);
+        assert!(result.was_truncated);
+        assert!(result.content.contains("lines omitted"));
     }
 
     #[test]
@@ -271,5 +298,39 @@ mod tests {
         let config = config_with_optimize(OptimizeConfig::default());
         let input = "hello\nworld";
         assert_eq!(apply_tool_filters(input, &config), "hello\nworld");
+    }
+
+    #[test]
+    fn test_truncate_lines_under_limit() {
+        let input = "line1\nline2\nline3";
+        let (result, truncated) = truncate_lines(input, 500);
+        assert_eq!(result, input);
+        assert!(!truncated);
+    }
+
+    #[test]
+    fn test_truncate_lines_over_limit() {
+        let lines: Vec<String> = (1..=600).map(|i| format!("line {i}")).collect();
+        let input = lines.join("\n");
+        let (result, truncated) = truncate_lines(&input, 500);
+        assert!(truncated);
+        assert!(result.starts_with("line 1\n"));
+        assert!(result.contains("lines omitted"));
+        assert!(result.ends_with("line 600"));
+        // Should not contain lines from the middle
+        assert!(!result.contains("line 300"));
+    }
+
+    #[test]
+    fn test_truncate_lines_preserves_head_tail() {
+        let lines: Vec<String> = (1..=1000).map(|i| format!("line {i}")).collect();
+        let input = lines.join("\n");
+        let (result, truncated) = truncate_lines(&input, 500);
+        assert!(truncated);
+        // 40% of 500 = 200 head lines, 200 tail lines
+        assert!(result.contains("line 200"));
+        assert!(!result.contains("line 201\n"));
+        assert!(result.contains("line 801"));
+        assert!(result.contains("[... 600 lines omitted ...]"));
     }
 }
