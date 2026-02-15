@@ -19,14 +19,7 @@ pub fn run() {
         .and_then(|v| v.as_str())
         .unwrap_or("");
 
-    // Pass through if empty or already wrapped (prevent recursion)
-    if command.is_empty() || command.starts_with("tkn ") {
-        return;
-    }
-
-    // Complex commands (pipes, chains, subshells) run as-is — their output
-    // structure is intentional and shouldn't be optimized away.
-    if has_complex_syntax(command) {
+    if should_skip(command) {
         return;
     }
 
@@ -302,6 +295,14 @@ fn is_long_lived(command: &str) -> bool {
     false
 }
 
+/// Returns true if the command should be passed through without wrapping.
+fn should_skip(command: &str) -> bool {
+    command.is_empty()
+        || command.starts_with("tkn ")
+        || command.trim_start().starts_with('#')
+        || has_complex_syntax(command)
+}
+
 /// Detects commands with pipes, logical operators, semicolons, or subshells.
 /// These are intentionally complex and their output should not be optimized.
 fn has_complex_syntax(command: &str) -> bool {
@@ -359,6 +360,13 @@ mod tests {
     #[test]
     fn test_background() {
         assert!(has_complex_syntax("sleep 10 &"));
+    }
+
+    #[test]
+    fn test_comments_skipped() {
+        assert!(should_skip("# This is a comment"));
+        assert!(should_skip("  # indented comment"));
+        assert!(!should_skip("echo '# not a comment'"));
     }
 
     #[test]
