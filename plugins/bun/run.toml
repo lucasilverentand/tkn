@@ -1,0 +1,22 @@
+match = "bun run"
+
+[optimize]
+strip = [
+    # Turbo boilerplate
+    "^• Packages in scope:",
+    "^• Running .+ in \\d+ packages",
+    "^• Remote caching disabled",
+    "^\\$ turbo run ",
+    # Cache hit/miss lines
+    "cache hit, replaying logs",
+    "cache miss, executing",
+    # Bare tsc/build invocations
+    "^@.+: \\$ tsc( --noEmit)?$",
+    # Turbo internal command exit lines
+    "^@.+#\\w+: command .+ exited ",
+    # node_modules type errors (dependency noise, not user code)
+    "node_modules/",
+    # Duplicate TS overload explanations
+    "^\\s+Overload \\d+ of \\d+, '.+', gave the following error\\.$",
+    "^\\s+Argument of type '.+' is not assignable to parameter of type '.+'\\.$",
+]

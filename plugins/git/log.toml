@@ -1,0 +1,4 @@
+match = "git log"
+
+[transform]
+add = ["--no-color"]

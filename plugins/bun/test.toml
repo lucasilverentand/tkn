@@ -1,0 +1,9 @@
+match = "bun test"
+
+[optimize]
+strip = [
+    # Debug/trace log lines from test output
+    "^\\[\\S+\\] conversation=\\S+ .+ (New message|Response compl|Error:)",
+    # Passing test details (keep summary)
+    "^\\(pass\\) ",
+]

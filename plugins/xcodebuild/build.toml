@@ -1,0 +1,9 @@
+match = "xcodebuild build"
+
+[optimize]
+keep = [
+    "(?i)error[:\\[]",
+    "(?i)warning[:\\[]",
+    "\\*\\* BUILD (SUCCEEDED|FAILED) \\*\\*",
+    "^Build complete!",
+]

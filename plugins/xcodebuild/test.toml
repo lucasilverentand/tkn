@@ -1,0 +1,16 @@
+match = "xcodebuild test"
+
+[optimize]
+keep = [
+    # Test lifecycle
+    "^[◇✔✘☐] (Test|Suite|Test run) ",
+    # Test summaries
+    "^Test Suite '.+' (started|passed|failed)",
+    "^Executed \\d+ test",
+    # Build/test result
+    "\\*\\* (TEST|BUILD) (SUCCEEDED|FAILED) \\*\\*",
+    # Errors and failures
+    "(?i)error:",
+    "(?i)failed",
+    "^Testing started",
+]
