@@ -24,6 +24,12 @@ pub fn run() {
         return;
     }
 
+    // Complex commands (pipes, chains, subshells) run as-is — their output
+    // structure is intentional and shouldn't be optimized away.
+    if has_complex_syntax(command) {
+        return;
+    }
+
     // Pick subcommand: long-lived processes get `pass` (inherited stdio),
     // everything else gets `exec` (captured + optimized).
     let subcmd = if is_long_lived(command) { "pass" } else { "exec" };
@@ -207,4 +213,91 @@ fn is_long_lived(command: &str) -> bool {
         }
     }
     cmd.contains(" --watch") || cmd.ends_with(" --watch")
+}
+
+/// Detects commands with pipes, logical operators, semicolons, or subshells.
+/// These are intentionally complex and their output should not be optimized.
+fn has_complex_syntax(command: &str) -> bool {
+    let mut in_single = false;
+    let mut in_double = false;
+    let mut chars = command.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if !in_single => {
+                chars.next(); // skip escaped char
+            }
+            '\'' if !in_double => in_single = !in_single,
+            '"' if !in_single => in_double = !in_double,
+            _ if in_single || in_double => {}
+            '|' | ';' => return true,
+            '&' => {
+                if chars.peek() == Some(&'&') {
+                    return true; // &&
+                }
+                return true; // background &
+            }
+            '(' | ')' => return true, // subshell
+            _ => {}
+        }
+    }
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pipe() {
+        assert!(has_complex_syntax("ls | grep foo"));
+        assert!(has_complex_syntax("git log | head -20"));
+    }
+
+    #[test]
+    fn test_and_chain() {
+        assert!(has_complex_syntax("mkdir foo && cd foo"));
+    }
+
+    #[test]
+    fn test_semicolon() {
+        assert!(has_complex_syntax("ls; pwd"));
+    }
+
+    #[test]
+    fn test_subshell() {
+        assert!(has_complex_syntax("(cd /tmp && ls)"));
+    }
+
+    #[test]
+    fn test_background() {
+        assert!(has_complex_syntax("sleep 10 &"));
+    }
+
+    #[test]
+    fn test_simple_commands() {
+        assert!(!has_complex_syntax("git diff"));
+        assert!(!has_complex_syntax("cargo test --release"));
+        assert!(!has_complex_syntax("ls -la /tmp"));
+    }
+
+    #[test]
+    fn test_quoted_pipes_ignored() {
+        assert!(!has_complex_syntax(r#"echo "foo | bar""#));
+        assert!(!has_complex_syntax("echo 'foo | bar'"));
+        assert!(!has_complex_syntax(r#"grep "a && b" file.txt"#));
+    }
+
+    #[test]
+    fn test_escaped_chars() {
+        assert!(!has_complex_syntax(r"echo foo\|bar"));
+        assert!(!has_complex_syntax(r"echo foo\;bar"));
+    }
+
+    #[test]
+    fn test_complex_real_world() {
+        assert!(has_complex_syntax(
+            "gh issue list --state all --limit 500 --json number | jq -r '.[].number' | xargs -I {} gh issue delete {} --yes 2>&1 | tail -5"
+        ));
+    }
 }
