@@ -50,6 +50,20 @@ impl StorageManager {
         self.write_analytics(&analytics)
     }
 
+    /// Remove a specific tool from analytics, subtracting its counts from the totals.
+    /// Returns Ok(true) if the tool was found and removed, Ok(false) if not found.
+    pub fn reset_tool_stats(&self, tool: &str) -> std::io::Result<bool> {
+        let mut analytics = self.read_analytics();
+        let Some(stats) = analytics.tools.remove(tool) else {
+            return Ok(false);
+        };
+        analytics.total_commands = analytics.total_commands.saturating_sub(stats.count);
+        analytics.total_raw_bytes = analytics.total_raw_bytes.saturating_sub(stats.total_raw_bytes);
+        analytics.total_optimized_bytes = analytics.total_optimized_bytes.saturating_sub(stats.total_optimized_bytes);
+        self.write_analytics(&analytics)?;
+        Ok(true)
+    }
+
     pub fn write_analytics(&self, analytics: &Analytics) -> std::io::Result<()> {
         let path = self.analytics_path();
         let json = serde_json::to_string_pretty(analytics)

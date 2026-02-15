@@ -1,7 +1,17 @@
 use crate::storage::StorageManager;
 
-pub fn run() {
+pub fn run(reset: Option<&str>) {
     let storage = StorageManager::new();
+
+    if let Some(tool) = reset {
+        match storage.reset_tool_stats(tool) {
+            Ok(true) => println!("Reset stats for \"{tool}\"."),
+            Ok(false) => eprintln!("tkn: no stats found for \"{tool}\""),
+            Err(e) => eprintln!("tkn: failed to reset stats: {e}"),
+        }
+        return;
+    }
+
     let analytics = storage.read_analytics();
 
     if analytics.total_commands == 0 {

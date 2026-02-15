@@ -28,7 +28,11 @@ enum Commands {
         args: Vec<String>,
     },
     /// Show analytics and usage statistics
-    Stats,
+    Stats {
+        /// Remove a specific tool from stats (e.g. "git diff")
+        #[arg(long)]
+        reset: Option<String>,
+    },
     /// Browse and retrieve command logs
     Log {
         /// Reference ID to show full log for
@@ -112,8 +116,8 @@ fn main() {
     let exit_code = match cli.command {
         Commands::Exec { args } => cmd::exec::run(&args),
         Commands::Pass { args } => cmd::pass::run(&args),
-        Commands::Stats => {
-            cmd::stats::run();
+        Commands::Stats { reset } => {
+            cmd::stats::run(reset.as_deref());
             0
         }
         Commands::Log { id } => {
