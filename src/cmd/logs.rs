@@ -17,16 +17,7 @@ fn show_log(storage: &StorageManager, ref_id: &str) {
             let patterns = tool_config::collect_patterns();
             let _ = storage.record_full_log_read(&entry.command, &patterns);
 
-            println!("Ref:      {}", entry.ref_id);
-            println!("Command:  {}", entry.command);
-            println!("Exit:     {}", entry.exit_code);
-            println!("Time:     {}", entry.timestamp.format("%Y-%m-%d %H:%M:%S UTC"));
-            println!("Duration: {} ms", entry.duration_ms);
-            println!(
-                "Size:     {} -> {} bytes",
-                entry.raw_bytes, entry.optimized_bytes
-            );
-            println!("{}", "-".repeat(40));
+            // Metadata is tracked but not printed — just output the raw log
         }
         Err(e) => {
             eprintln!("tkn: failed to read metadata for {ref_id}: {e}");
