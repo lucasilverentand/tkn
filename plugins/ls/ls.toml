@@ -1,7 +1,36 @@
 match = "ls"
 
+[transform]
+add = [
+    "-1|-l",  # one-per-line unless long format requested
+    "-h",     # human-readable sizes (harmless without -l)
+]
+
 [optimize]
 strip = [
+    # "total N" header in long format
     "^total \\d+",
-    "^[d-][rwxst@+-]{9,}\\s+\\d+\\s+\\S+\\s+\\S+\\s+\\S+\\s+\\S+\\s+\\S+\\s+\\S+\\s+\\.\\.*$",
+    # . and .. entries (long format)
+    "^[dlcbps-][rwxsStT@+-]{9}.*\\s\\.{1,2}$",
+    # . and .. entries (short/one-per-line format)
+    "^\\.{1,2}$",
+    # OS artifacts
+    "(?i)\\.DS_Store$",
+    "(?i)Thumbs\\.db$",
+    "(?i)desktop\\.ini$",
+    "__MACOSX$",
+    "\\.Spotlight-V100$",
+    "\\.fseventsd$",
+    "\\.Trashes$",
 ]
+max_lines = 50
+
+# Strip metadata columns from long-format lines, keeping only size + date + name
+[[optimize.replace]]
+pattern = "^[dlcbps-][rwxsStT@+-]{9}[.@+]?\\s+\\d+\\s+\\S+\\s+\\S+\\s+"
+replacement = ""
+
+# Strip Unicode Private Use Area characters (Nerd Font / eza / lsd icons)
+[[optimize.replace]]
+pattern = "[\\x{E000}-\\x{F8FF}]\\s?"
+replacement = ""

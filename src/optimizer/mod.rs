@@ -66,7 +66,7 @@ fn truncate_lines(input: &str, max_lines: usize) -> (String, bool) {
 fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
     let opt = &config.optimize;
 
-    if opt.keep.is_empty() && opt.strip.is_empty() {
+    if opt.keep.is_empty() && opt.strip.is_empty() && opt.replace.is_empty() {
         return input.to_string();
     }
 
@@ -82,7 +82,13 @@ fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
         .filter_map(|p| Regex::new(p).ok())
         .collect();
 
-    let filtered: Vec<&str> = input
+    let replace_regexes: Vec<(Regex, &str)> = opt
+        .replace
+        .iter()
+        .filter_map(|r| Regex::new(&r.pattern).ok().map(|re| (re, r.replacement.as_str())))
+        .collect();
+
+    let filtered: Vec<String> = input
         .lines()
         .filter(|line| {
             // keep wins: if keep patterns exist, only keep matching lines
@@ -91,6 +97,16 @@ fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
             }
             // Otherwise, strip matching lines
             !strip_regexes.iter().any(|re| re.is_match(line))
+        })
+        .map(|line| {
+            if replace_regexes.is_empty() {
+                return line.to_string();
+            }
+            let mut result = line.to_string();
+            for (re, replacement) in &replace_regexes {
+                result = re.replace_all(&result, *replacement).into_owned();
+            }
+            result
         })
         .collect();
 
@@ -254,5 +270,60 @@ mod tests {
         assert!(!result.contains("line 201\n"));
         assert!(result.contains("line 801"));
         assert!(result.contains("[... 600 lines omitted ...]"));
+    }
+
+    #[test]
+    fn test_replace_inline() {
+        use crate::tool_config::ReplaceRule;
+        let config = config_with_optimize(OptimizeConfig {
+            replace: vec![ReplaceRule {
+                pattern: r"^\d+\s+".to_string(),
+                replacement: String::new(),
+            }],
+            ..Default::default()
+        });
+
+        let input = "42 hello\n7 world\nno match";
+        let result = apply_tool_filters(input, &config);
+        assert_eq!(result, "hello\nworld\nno match");
+    }
+
+    #[test]
+    fn test_replace_with_strip() {
+        use crate::tool_config::ReplaceRule;
+        let config = config_with_optimize(OptimizeConfig {
+            strip: vec![r"^total \d+".to_string()],
+            replace: vec![ReplaceRule {
+                pattern: r"^[d-][rwx-]{9}\s+\d+\s+\S+\s+\S+\s+".to_string(),
+                replacement: String::new(),
+            }],
+            ..Default::default()
+        });
+
+        let input = "total 48\ndrwxr-xr-x  5 luca  staff  160B Feb 16 14:30 src\n-rw-r--r--  1 luca  staff  2.3K Feb 16 14:30 Cargo.toml";
+        let result = apply_tool_filters(input, &config);
+        assert_eq!(result, "160B Feb 16 14:30 src\n2.3K Feb 16 14:30 Cargo.toml");
+    }
+
+    #[test]
+    fn test_replace_ordered() {
+        use crate::tool_config::ReplaceRule;
+        let config = config_with_optimize(OptimizeConfig {
+            replace: vec![
+                ReplaceRule {
+                    pattern: r"foo".to_string(),
+                    replacement: "bar".to_string(),
+                },
+                ReplaceRule {
+                    pattern: r"bar".to_string(),
+                    replacement: "baz".to_string(),
+                },
+            ],
+            ..Default::default()
+        });
+
+        // "foo" → "bar" → "baz" (replacements are ordered/chained)
+        let result = apply_tool_filters("foo", &config);
+        assert_eq!(result, "baz");
     }
 }

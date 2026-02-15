@@ -25,15 +25,45 @@ pub fn transform_command(command: &str, config: &ToolConfig) -> String {
         }
     }
 
-    // 3. Add: append flags that aren't already present.
+    // 3. Add: insert flags that aren't already present.
     //    Supports aliases via pipe separator: "--short|-s" means add "--short"
     //    only if neither "--short" nor "-s" is already present.
+    //    Short flags (e.g. "-l") are also detected inside combined groups (e.g. "-la").
+    //    New flags are inserted before the first positional argument.
+    let mut to_add = Vec::new();
     for flag in &transform.add {
         let variants: Vec<&str> = flag.split('|').collect();
         let canonical = variants[0];
-        let already_present = variants.iter().any(|v| parts.iter().any(|p| p == v));
+        let already_present = variants.iter().any(|v| {
+            parts.iter().any(|p| {
+                if p == v {
+                    return true;
+                }
+                // Check combined short flags: "-l" matches inside "-la"
+                if v.starts_with('-') && !v.starts_with("--") && v.len() == 2 {
+                    let ch = v.chars().nth(1).unwrap();
+                    if p.starts_with('-') && !p.starts_with("--") && p.len() > 2 {
+                        return p[1..].contains(ch);
+                    }
+                }
+                false
+            })
+        });
         if !already_present {
-            parts.push(canonical.to_string());
+            to_add.push(canonical.to_string());
+        }
+    }
+
+    if !to_add.is_empty() {
+        // Insert after the last existing flag to keep flags before positional args.
+        // Falls back to appending at end if no flags are present.
+        let insert_pos = parts
+            .iter()
+            .rposition(|p| p.starts_with('-'))
+            .map(|i| i + 1)
+            .unwrap_or(parts.len());
+        for (i, flag) in to_add.into_iter().enumerate() {
+            parts.insert(insert_pos + i, flag);
         }
     }
 
@@ -95,6 +125,7 @@ mod tests {
     #[test]
     fn test_add_flag() {
         let config = make_config(vec!["--no-color"], vec![], vec![]);
+        // No existing flags, so new flag appended at end
         assert_eq!(
             transform_command("git diff src/main.rs", &config),
             "git diff src/main.rs --no-color"
@@ -136,7 +167,9 @@ mod tests {
             vec![("--color=auto", "--color=never")],
         );
         let result = transform_command("git diff --verbose --color=auto src/main.rs", &config);
-        assert_eq!(result, "git diff --color=never src/main.rs --no-color");
+        // After remove --verbose and replace --color=auto: "git diff --color=never src/main.rs"
+        // Then add --no-color after last flag (--color=never)
+        assert_eq!(result, "git diff --color=never --no-color src/main.rs");
     }
 
     #[test]
@@ -180,5 +213,54 @@ mod tests {
     fn test_shell_split_quoted() {
         let parts = shell_split("git commit -m 'hello world'");
         assert_eq!(parts, vec!["git", "commit", "-m", "'hello world'"]);
+    }
+
+    #[test]
+    fn test_add_detects_combined_short_flags() {
+        // "-1|-l" should not add -1 when -l is inside combined "-la"
+        let config = make_config(vec!["-1|-l"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls -la /tmp", &config),
+            "ls -la /tmp"
+        );
+    }
+
+    #[test]
+    fn test_add_combined_short_flag_not_present() {
+        // "-1|-l" should add -1 when neither -1 nor -l is present
+        // No existing flags, so appended at end
+        let config = make_config(vec!["-1|-l"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls /tmp", &config),
+            "ls /tmp -1"
+        );
+    }
+
+    #[test]
+    fn test_add_inserts_before_positional_args() {
+        let config = make_config(vec!["-h"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls -la /tmp", &config),
+            "ls -la -h /tmp"
+        );
+    }
+
+    #[test]
+    fn test_add_multiple_flags_after_last_flag() {
+        // With existing flags, new flags inserted after last flag
+        let config = make_config(vec!["-1|-l", "-h"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls -a /tmp", &config),
+            "ls -a -1 -h /tmp"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_no_positional_args() {
+        let config = make_config(vec!["-h"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls -la", &config),
+            "ls -la -h"
+        );
     }
 }

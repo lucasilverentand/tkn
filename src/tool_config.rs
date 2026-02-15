@@ -32,12 +32,23 @@ pub struct TransformConfig {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+pub struct ReplaceRule {
+    pub pattern: String,
+    #[serde(default)]
+    pub replacement: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct OptimizeConfig {
     #[serde(default)]
     pub strip: Vec<String>,
 
     #[serde(default)]
     pub keep: Vec<String>,
+
+    /// Ordered regex replacements applied per-line (pattern → replacement).
+    #[serde(default)]
+    pub replace: Vec<ReplaceRule>,
 
     pub max_lines: Option<usize>,
 
@@ -151,6 +162,9 @@ fn apply_overrides(config: &mut ToolConfig, overrides: &PluginOverrides) {
         }
         if let Some(ref keep) = o.keep {
             config.optimize.keep = keep.clone();
+        }
+        if let Some(ref replace) = o.replace {
+            config.optimize.replace = replace.clone();
         }
     }
 }

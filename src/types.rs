@@ -246,6 +246,7 @@ pub struct OptimizeOverrides {
     pub max_lines: Option<usize>,
     pub strip: Option<Vec<String>>,
     pub keep: Option<Vec<String>>,
+    pub replace: Option<Vec<crate::tool_config::ReplaceRule>>,
 }
 
 #[cfg(test)]
