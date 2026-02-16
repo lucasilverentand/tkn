@@ -27,11 +27,11 @@ pub fn run() {
     // everything else gets `exec` (captured + optimized).
     let subcmd = if is_long_lived(command) { "pass" } else { "exec" };
 
-    // Pass the original command verbatim via env var so it survives shell
-    // arg-splitting (e.g. multi-word git commit messages keep their quoting).
-    // Single-quote the value, escaping any embedded single quotes.
+    // Pass the original command as a single shell-quoted argument so it
+    // survives arg-splitting (e.g. multi-word git commit messages keep their
+    // quoting). Single-quote the value, escaping any embedded single quotes.
     let escaped = command.replace('\'', "'\\''");
-    let new_command = format!("TKN_ORIGINAL_CMD='{escaped}' tkn {subcmd}");
+    let new_command = format!("tkn {subcmd} '{escaped}'");
     let response = serde_json::json!({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",

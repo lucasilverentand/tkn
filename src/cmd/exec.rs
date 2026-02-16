@@ -8,18 +8,8 @@ use crate::tool_config;
 use crate::transformer;
 use crate::types::{LogEntry, SessionEntry};
 
-/// Environment variable that carries the original command string verbatim
-/// from the hook, bypassing shell arg splitting.
-const ENV_ORIGINAL_CMD: &str = "TKN_ORIGINAL_CMD";
-
 pub fn run(args: &[String]) -> i32 {
-    // Prefer the env var (set by the hook) so we get the exact command string
-    // without shell arg-splitting losing quoting. Fall back to args for direct
-    // `tkn exec -- <command>` invocations.
-    let command = std::env::var(ENV_ORIGINAL_CMD)
-        .ok()
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| args.join(" "));
+    let command = args.join(" ");
 
     if command.is_empty() {
         eprintln!("tkn: no command provided");
