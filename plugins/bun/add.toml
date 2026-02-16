@@ -1,0 +1,9 @@
+match = "bun add"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^Resolving\\.\\.\\.",
+    "^Resolved,? ",
+    "^Saved lockfile",
+]

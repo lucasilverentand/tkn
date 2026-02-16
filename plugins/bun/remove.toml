@@ -1,0 +1,7 @@
+match = "bun remove"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^Saved lockfile",
+]

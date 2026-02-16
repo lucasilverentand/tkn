@@ -1,0 +1,12 @@
+match = "bun install"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    # Package resolution/download progress
+    "^\\$ bun install",
+    "^Resolving\\.\\.\\.",
+    "^Resolved,? ",
+    "^\\+ .+@\\d",           # individual package added lines
+    "^Saved lockfile",
+]

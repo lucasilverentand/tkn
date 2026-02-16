@@ -1,0 +1,9 @@
+match = "bun build"
+
+[optimize]
+truncate = "bottom"
+keep = [
+    "(?i)error",
+    "(?i)warn",
+    "^\\s*\\d+(\\.\\d+)?\\s*(kb|mb|b)\\b",  # size summary lines
+]
