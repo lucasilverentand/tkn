@@ -1,0 +1,4 @@
+match = "cargo help"
+
+[optimize]
+max_lines = 50

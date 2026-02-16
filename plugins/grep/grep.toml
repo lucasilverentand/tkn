@@ -1,0 +1,9 @@
+match = "grep"
+
+[optimize]
+max_lines = 200
+
+# Strip absolute home directory prefix from file paths
+[[optimize.replace]]
+pattern = "^/(Users|home)/[^/]+/"
+replacement = ""

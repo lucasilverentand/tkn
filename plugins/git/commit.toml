@@ -1,0 +1,7 @@
+match = "git commit"
+
+[optimize]
+strip = [
+    "^ (create|delete|copy) mode \\d+",
+    "^ rename .+ => .+",
+]

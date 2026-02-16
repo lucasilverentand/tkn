@@ -76,10 +76,14 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("tree", "tree", include_str!("../plugins/tree/tree.toml")),
         ("ls", "ls", include_str!("../plugins/ls/ls.toml")),
         ("git", "git-log", include_str!("../plugins/git/log.toml")),
+        ("git", "git-commit", include_str!("../plugins/git/commit.toml")),
+        ("git", "git-stash", include_str!("../plugins/git/stash.toml")),
         ("xcodebuild", "xcodebuild-test", include_str!("../plugins/xcodebuild/test.toml")),
         ("xcodebuild", "xcodebuild-build", include_str!("../plugins/xcodebuild/build.toml")),
         ("bun", "bun-run", include_str!("../plugins/bun/run.toml")),
         ("bun", "bun-test", include_str!("../plugins/bun/test.toml")),
+        ("cargo", "cargo-help", include_str!("../plugins/cargo/help.toml")),
+        ("grep", "grep", include_str!("../plugins/grep/grep.toml")),
     ]
 }
 
@@ -245,7 +249,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 20);
+        assert_eq!(plugins.len(), 24);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));
@@ -258,9 +262,11 @@ mod tests {
     fn test_builtin_plugins_have_bundles() {
         let plugins = builtin_plugins();
         let git_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "git").collect();
-        assert_eq!(git_plugins.len(), 4);
+        assert_eq!(git_plugins.len(), 6);
         let cargo_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "cargo").collect();
-        assert_eq!(cargo_plugins.len(), 3);
+        assert_eq!(cargo_plugins.len(), 4);
+        let grep_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "grep").collect();
+        assert_eq!(grep_plugins.len(), 1);
         let gh_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "gh").collect();
         assert_eq!(gh_plugins.len(), 5);
     }

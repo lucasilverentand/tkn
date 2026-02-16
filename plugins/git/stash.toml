@@ -1,0 +1,22 @@
+match = "git stash"
+
+[optimize]
+strip = [
+    # Usage help boilerplate
+    "^usage: git stash",
+    "^   or: git stash",
+    "^\\s+\\[--pathspec",
+    "^\\s+\\[--\\] \\[<pathspec",
+    "^\\s+\\[-u \\| --include",
+    "^\\s+\\[-a \\| --all\\]",
+    "^\\s+\\[\\(-m \\|",
+    # Option descriptions
+    "^\\s+-[a-zA-Z], --\\[?no-\\]?",
+    "^\\s+--\\[no-\\]",
+    "^\\s{20,}",
+    # Auto-merging noise
+    "^Auto-merging ",
+    # Git hints
+    "^\\(use \"git ",
+]
+max_lines = 100
