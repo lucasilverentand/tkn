@@ -14,10 +14,23 @@ impl StorageManager {
         if !path.exists() {
             return Analytics::default();
         }
-        fs::read_to_string(&path)
+        let mut analytics: Analytics = fs::read_to_string(&path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+            .unwrap_or_default();
+
+        // Backfill estimated_raw_bytes for data created before savings_factor was added.
+        // Use raw_bytes as the baseline so new commands with savings_factor accumulate on top.
+        if analytics.total_estimated_raw_bytes == 0 && analytics.total_raw_bytes > 0 {
+            analytics.total_estimated_raw_bytes = analytics.total_raw_bytes;
+        }
+        for stats in analytics.tools.values_mut() {
+            if stats.total_estimated_raw_bytes == 0 && stats.total_raw_bytes > 0 {
+                stats.total_estimated_raw_bytes = stats.total_raw_bytes;
+            }
+        }
+
+        analytics
     }
 
     pub fn update_analytics_with_patterns(&self, entry: &LogEntry, patterns: &HashSet<String>) -> std::io::Result<()> {

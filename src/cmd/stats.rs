@@ -101,6 +101,29 @@ pub fn run(reset: Option<&str>) {
             total_b.cmp(&total_a)
         });
 
+        // Compute the column width needed to align all entries.
+        // Each line has: indent + name + marker + gap -> count column
+        // We want all count columns to align at the same position.
+        let mut max_col: usize = 0;
+        for (main_cmd, entries) in &sorted_groups {
+            if entries.len() == 1 {
+                let (tool, _) = &entries[0];
+                let marker_w = if patterns.contains(*tool) { 2 } else { 0 };
+                // indent=2 + name + marker
+                max_col = max_col.max(2 + tool.len() + marker_w);
+            } else {
+                // Group header: indent=2 + main_cmd
+                max_col = max_col.max(2 + main_cmd.len());
+                for (tool, _) in entries {
+                    let marker_w = if patterns.contains(*tool) { 2 } else { 0 };
+                    // indent=4 + name + marker
+                    max_col = max_col.max(4 + tool.len() + marker_w);
+                }
+            }
+        }
+        // Add minimum gap before count column
+        let col = max_col + 2;
+
         for (main_cmd, entries) in &sorted_groups {
             let group_count: u64 = entries.iter().map(|(_, s)| s.count).sum();
             let group_raw: u64 = entries.iter().map(|(_, s)| s.total_raw_bytes).sum();
@@ -115,7 +138,8 @@ pub fn run(reset: Option<&str>) {
             if entries.len() == 1 {
                 // Single entry — print flat (no group header)
                 let (tool, stats) = &entries[0];
-                print_tool_line(tool, stats, &patterns, "  ", 30);
+                let width = col - 2; // indent=2
+                print_tool_line(tool, stats, &patterns, "  ", width);
             } else {
                 // Group header
                 let group_est: u64 = entries.iter().map(|(_, s)| s.total_estimated_raw_bytes).sum();
@@ -130,9 +154,11 @@ pub fn run(reset: Option<&str>) {
                 } else {
                     String::new()
                 };
-                println!("  {:<30} {:>5}x  saved {:.0}%{}", main_cmd, group_count, group_pct, group_suffix);
+                let header_width = col - 2; // indent=2
+                println!("  {:<header_width$} {:>5}x  saved {:.0}%{}", main_cmd, group_count, group_pct, group_suffix);
+                let sub_width = col - 4; // indent=4
                 for (tool, stats) in entries {
-                    print_tool_line(tool, stats, &patterns, "    ", 28);
+                    print_tool_line(tool, stats, &patterns, "    ", sub_width);
                 }
             }
         }
