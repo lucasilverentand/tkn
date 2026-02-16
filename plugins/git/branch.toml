@@ -1,0 +1,14 @@
+match = "git branch"
+
+[optimize]
+truncate = "top"
+max_lines = 50
+strip = [
+    "^\\s*remotes/origin/HEAD ",    # HEAD pointer
+    "^\\s*$",
+]
+
+# Strip remotes/origin/ prefix (redundant)
+[[optimize.replace]]
+pattern = "remotes/origin/"
+replacement = ""

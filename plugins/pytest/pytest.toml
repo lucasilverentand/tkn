@@ -1,0 +1,17 @@
+match = "pytest"
+
+[transform]
+add = ["--tb=short|--tb", "-q|--quiet|-v|--verbose"]
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^=+ test session starts =+$",
+    "^platform ",
+    "^rootdir:",
+    "^configfile:",
+    "^plugins:",
+    "^collected \\d+ items?",
+    "^\\s*$",
+    "^PASSED",
+]

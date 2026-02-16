@@ -1,0 +1,10 @@
+match = "npm run"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^> .+@.+ ",            # lifecycle script header (> project@1.0.0 build)
+    "^npm warn ",
+    "^npm notice ",
+    "^npm WARN ",
+]

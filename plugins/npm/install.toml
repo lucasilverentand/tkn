@@ -1,0 +1,10 @@
+match = "npm install"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^npm warn ",
+    "^npm WARN ",
+    "^npm notice ",
+    "^npm http ",
+]

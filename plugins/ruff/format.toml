@@ -1,0 +1,9 @@
+match = "ruff format"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "\\d+ files? left unchanged",
+    "^All checks passed",
+    "^\\s*$",
+]

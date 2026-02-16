@@ -1,0 +1,9 @@
+match = "make"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^make\\[\\d+\\]: Entering directory",
+    "^make\\[\\d+\\]: Leaving directory",
+    "^make\\[\\d+\\]: Nothing to be done for",
+]

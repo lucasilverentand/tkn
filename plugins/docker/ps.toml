@@ -1,0 +1,8 @@
+match = "docker ps"
+
+[optimize]
+truncate = "top"
+max_lines = 50
+strip = [
+    "^\\s*$",
+]

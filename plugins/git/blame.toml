@@ -1,0 +1,5 @@
+match = "git blame"
+
+[optimize]
+truncate = "top"
+max_lines = 200

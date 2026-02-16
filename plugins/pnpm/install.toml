@@ -1,0 +1,11 @@
+match = "pnpm install"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^Resolving:",
+    "^Progress:",
+    "^Packages: \\+",
+    "^Downloading ",
+    "^\\s*$",
+]

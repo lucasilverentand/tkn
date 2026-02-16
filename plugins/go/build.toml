@@ -1,0 +1,10 @@
+match = "go build"
+
+[optimize]
+truncate = "bottom"
+keep = [
+    "\\.go:\\d+:",           # file:line:col diagnostics
+    "(?i)error",
+    "(?i)undefined",
+    "(?i)cannot ",
+]

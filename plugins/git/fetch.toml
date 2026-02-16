@@ -1,0 +1,16 @@
+match = "git fetch"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^Enumerating objects:",
+    "^Counting objects:",
+    "^Compressing objects:",
+    "^Total \\d+",
+    "^remote: Enumerating objects:",
+    "^remote: Counting objects:",
+    "^remote: Compressing objects:",
+    "^remote: Total \\d+",
+    "^Unpacking objects:",
+    "^From .+$",
+]

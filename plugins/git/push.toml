@@ -1,0 +1,13 @@
+match = "git push"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^Enumerating objects:",
+    "^Counting objects:",
+    "^Compressing objects:",
+    "^Writing objects:",
+    "^Delta compression ",
+    "^Total \\d+",
+    "^remote: Resolving deltas:",
+]

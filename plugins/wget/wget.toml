@@ -1,0 +1,13 @@
+match = "wget"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^\\d+K [\\. ]+\\d+%",         # progress bar lines
+    "^Resolving ",
+    "^Connecting to ",
+    "^HTTP request sent",
+    "^Length:",
+    "^Saving to:",
+    "^\\s*$",
+]

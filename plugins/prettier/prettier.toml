@@ -1,0 +1,9 @@
+match = "prettier"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^Checking formatting\\.\\.\\.",
+    "^All matched files use Prettier code style",
+    "^\\s*$",
+]

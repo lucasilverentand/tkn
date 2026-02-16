@@ -1,0 +1,10 @@
+match = "tsc"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^\\s*$",
+    "^\\s+Overload \\d+ of \\d+,",           # duplicate overload error noise
+    "^The following changes are being made",  # tsconfig modification notice
+    "^\\s+The expected type comes from",       # type inference hint
+]

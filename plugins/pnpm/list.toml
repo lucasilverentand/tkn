@@ -1,0 +1,10 @@
+match = "pnpm list"
+
+[optimize]
+truncate = "top"
+strip = [
+    "^[│├└─┬]+",            # box-drawing decoration
+    "^Legend:",
+    "^\\s*$",
+]
+max_lines = 100

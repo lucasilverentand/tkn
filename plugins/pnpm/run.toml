@@ -1,0 +1,9 @@
+match = "pnpm run"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^> .+@.+ ",            # lifecycle script header
+    "^\\$ ",                 # echoed command
+    "^ERR_PNPM",
+]

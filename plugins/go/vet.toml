@@ -1,0 +1,8 @@
+match = "go vet"
+
+[optimize]
+truncate = "bottom"
+keep = [
+    "\\.go:\\d+:",           # file:line:col diagnostics
+    "(?i)error",
+]

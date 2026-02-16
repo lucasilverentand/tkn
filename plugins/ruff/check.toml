@@ -1,0 +1,9 @@
+match = "ruff check"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^All checks passed!$",
+    "^Found \\d+ errors?\\.$",       # redundant when individual errors shown
+    "^\\[\\*\\] \\d+ fixable with",   # fixable hint
+]

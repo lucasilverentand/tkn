@@ -1,0 +1,9 @@
+match = "pip list"
+
+[optimize]
+truncate = "top"
+strip = [
+    "^-{2,}",               # table border lines
+    "^\\s*$",
+]
+max_lines = 100

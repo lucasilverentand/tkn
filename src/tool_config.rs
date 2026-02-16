@@ -100,8 +100,52 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("xcodebuild", "xcodebuild-build", include_str!("../plugins/xcodebuild/build.toml")),
         ("bun", "bun-run", include_str!("../plugins/bun/run.toml")),
         ("bun", "bun-test", include_str!("../plugins/bun/test.toml")),
+        ("bun", "bun-add", include_str!("../plugins/bun/add.toml")),
+        ("bun", "bun-build", include_str!("../plugins/bun/build.toml")),
+        ("bun", "bun-install", include_str!("../plugins/bun/install.toml")),
+        ("bun", "bun-remove", include_str!("../plugins/bun/remove.toml")),
         ("cargo", "cargo-help", include_str!("../plugins/cargo/help.toml")),
         ("grep", "grep", include_str!("../plugins/grep/grep.toml")),
+        // npm
+        ("npm", "npm-run", include_str!("../plugins/npm/run.toml")),
+        ("npm", "npm-test", include_str!("../plugins/npm/test.toml")),
+        ("npm", "npm-install", include_str!("../plugins/npm/install.toml")),
+        // pnpm
+        ("pnpm", "pnpm-install", include_str!("../plugins/pnpm/install.toml")),
+        ("pnpm", "pnpm-list", include_str!("../plugins/pnpm/list.toml")),
+        ("pnpm", "pnpm-outdated", include_str!("../plugins/pnpm/outdated.toml")),
+        ("pnpm", "pnpm-run", include_str!("../plugins/pnpm/run.toml")),
+        // python
+        ("pytest", "pytest", include_str!("../plugins/pytest/pytest.toml")),
+        ("ruff", "ruff-check", include_str!("../plugins/ruff/check.toml")),
+        ("ruff", "ruff-format", include_str!("../plugins/ruff/format.toml")),
+        ("pip", "pip-install", include_str!("../plugins/pip/install.toml")),
+        ("pip", "pip-list", include_str!("../plugins/pip/list.toml")),
+        // go
+        ("go", "go-test", include_str!("../plugins/go/test.toml")),
+        ("go", "go-build", include_str!("../plugins/go/build.toml")),
+        ("go", "go-vet", include_str!("../plugins/go/vet.toml")),
+        // docker & kubectl
+        ("docker", "docker-ps", include_str!("../plugins/docker/ps.toml")),
+        ("docker", "docker-images", include_str!("../plugins/docker/images.toml")),
+        ("docker", "docker-logs", include_str!("../plugins/docker/logs.toml")),
+        ("docker", "docker-build", include_str!("../plugins/docker/build.toml")),
+        ("kubectl", "kubectl-get", include_str!("../plugins/kubectl/get.toml")),
+        ("kubectl", "kubectl-logs", include_str!("../plugins/kubectl/logs.toml")),
+        // js/ts linters
+        ("tsc", "tsc", include_str!("../plugins/tsc/tsc.toml")),
+        ("eslint", "eslint", include_str!("../plugins/eslint/eslint.toml")),
+        ("prettier", "prettier", include_str!("../plugins/prettier/prettier.toml")),
+        // git subcommands
+        ("git", "git-branch", include_str!("../plugins/git/branch.toml")),
+        ("git", "git-push", include_str!("../plugins/git/push.toml")),
+        ("git", "git-pull", include_str!("../plugins/git/pull.toml")),
+        ("git", "git-fetch", include_str!("../plugins/git/fetch.toml")),
+        ("git", "git-add", include_str!("../plugins/git/add.toml")),
+        ("git", "git-blame", include_str!("../plugins/git/blame.toml")),
+        // misc
+        ("wget", "wget", include_str!("../plugins/wget/wget.toml")),
+        ("make", "make", include_str!("../plugins/make/make.toml")),
     ]
 }
 
@@ -273,7 +317,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 24);
+        assert_eq!(plugins.len(), 60);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));
@@ -286,9 +330,11 @@ mod tests {
     fn test_builtin_plugins_have_bundles() {
         let plugins = builtin_plugins();
         let git_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "git").collect();
-        assert_eq!(git_plugins.len(), 6);
+        assert_eq!(git_plugins.len(), 12);
         let cargo_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "cargo").collect();
         assert_eq!(cargo_plugins.len(), 4);
+        let bun_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "bun").collect();
+        assert_eq!(bun_plugins.len(), 6);
         let grep_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "grep").collect();
         assert_eq!(grep_plugins.len(), 1);
         let gh_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "gh").collect();

@@ -1,0 +1,11 @@
+match = "go test"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^--- PASS:",
+    "^ok\\s+\\S+\\s+\\d",       # ok package 0.123s (passing package summary)
+    "^=== RUN\\s",
+    "^=== PAUSE\\s",
+    "^=== CONT\\s",
+]

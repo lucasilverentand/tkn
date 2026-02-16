@@ -1,0 +1,5 @@
+match = "docker logs"
+
+[optimize]
+truncate = "bottom"
+max_lines = 100

@@ -1,0 +1,9 @@
+match = "eslint"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^\\s*$",
+    "^✖ \\d+ problems?",           # summary line (redundant with individual errors)
+    "^\\s+\\d+ errors? and \\d+ warnings?",
+]

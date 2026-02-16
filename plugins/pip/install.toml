@@ -1,0 +1,13 @@
+match = "pip install"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^\\s*Collecting ",
+    "^\\s*Downloading ",
+    "^\\s*Using cached ",
+    "^\\s*Requirement already satisfied",
+    "^\\s*Preparing metadata",
+    "^\\s*Installing collected packages",
+    "^\\s*$",
+]

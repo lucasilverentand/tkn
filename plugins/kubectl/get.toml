@@ -1,0 +1,8 @@
+match = "kubectl get"
+
+[optimize]
+truncate = "top"
+max_lines = 100
+strip = [
+    "^\\s*$",
+]

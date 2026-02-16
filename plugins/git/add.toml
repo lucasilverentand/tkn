@@ -1,0 +1,9 @@
+match = "git add"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^warning: LF will be replaced",
+    "^warning: CRLF will be replaced",
+    "^\\s*$",
+]
