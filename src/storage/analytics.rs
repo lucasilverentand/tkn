@@ -69,6 +69,18 @@ impl StorageManager {
         self.write_analytics(&analytics)
     }
 
+    /// Reset only the failure count for a specific tool.
+    /// Returns Ok(true) if the tool was found, Ok(false) if not found.
+    pub fn reset_tool_failures(&self, tool: &str) -> std::io::Result<bool> {
+        let mut analytics = self.read_analytics();
+        let Some(stats) = analytics.tools.get_mut(tool) else {
+            return Ok(false);
+        };
+        stats.failures = 0;
+        self.write_analytics(&analytics)?;
+        Ok(true)
+    }
+
     /// Remove a specific tool from analytics, subtracting its counts from the totals.
     /// Returns Ok(true) if the tool was found and removed, Ok(false) if not found.
     pub fn reset_tool_stats(&self, tool: &str) -> std::io::Result<bool> {

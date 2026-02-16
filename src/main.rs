@@ -32,6 +32,9 @@ enum Commands {
         /// Remove a specific tool from stats (e.g. "git diff")
         #[arg(long)]
         reset: Option<String>,
+        /// Reset only the failure count for a tool (e.g. "git diff")
+        #[arg(long)]
+        reset_failures: Option<String>,
     },
     /// Browse and retrieve command logs
     Log {
@@ -118,8 +121,8 @@ fn main() {
     let exit_code = match cli.command {
         Commands::Exec { args } => cmd::exec::run(&args),
         Commands::Pass { args } => cmd::pass::run(&args),
-        Commands::Stats { reset } => {
-            cmd::stats::run(reset.as_deref());
+        Commands::Stats { reset, reset_failures } => {
+            cmd::stats::run(reset.as_deref(), reset_failures.as_deref());
             0
         }
         Commands::Log { id, lines } => {

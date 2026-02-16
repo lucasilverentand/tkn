@@ -4,7 +4,7 @@ use crate::storage::StorageManager;
 use crate::tool_config;
 use crate::types::ToolStats;
 
-pub fn run(reset: Option<&str>) {
+pub fn run(reset: Option<&str>, reset_failures: Option<&str>) {
     let storage = StorageManager::new();
 
     if let Some(tool) = reset {
@@ -12,6 +12,15 @@ pub fn run(reset: Option<&str>) {
             Ok(true) => println!("Reset stats for \"{tool}\"."),
             Ok(false) => eprintln!("tkn: no stats found for \"{tool}\""),
             Err(e) => eprintln!("tkn: failed to reset stats: {e}"),
+        }
+        return;
+    }
+
+    if let Some(tool) = reset_failures {
+        match storage.reset_tool_failures(tool) {
+            Ok(true) => println!("Reset failures for \"{tool}\"."),
+            Ok(false) => eprintln!("tkn: no stats found for \"{tool}\""),
+            Err(e) => eprintln!("tkn: failed to reset failures: {e}"),
         }
         return;
     }
