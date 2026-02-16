@@ -1,6 +1,7 @@
 match = "git stash"
 
 [optimize]
+truncate = "top"
 strip = [
     # Usage help boilerplate
     "^usage: git stash",

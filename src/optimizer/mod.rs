@@ -2,7 +2,7 @@ mod basic;
 
 use regex::Regex;
 
-use crate::tool_config::ToolConfig;
+use crate::tool_config::{ToolConfig, TruncateMode};
 use crate::types::OptimizedOutput;
 
 pub use basic::strip_ansi;
@@ -27,7 +27,10 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
     let line_limit = tool_config
         .and_then(|c| c.optimize.max_lines)
         .unwrap_or(MAX_OUTPUT_LINES);
-    let (truncated_content, line_truncated) = truncate_lines(&optimized, line_limit);
+    let truncate_mode = tool_config
+        .map(|c| c.optimize.truncate)
+        .unwrap_or_default();
+    let (truncated_content, line_truncated) = truncate_lines(&optimized, line_limit, truncate_mode);
     optimized = truncated_content;
     was_truncated = was_truncated || line_truncated;
 
@@ -41,26 +44,38 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
     }
 }
 
-/// Truncate by line count, keeping head and tail lines with a separator in the middle.
+/// Truncate by line count using the specified strategy.
 /// Returns (output, was_truncated).
-fn truncate_lines(input: &str, max_lines: usize) -> (String, bool) {
+fn truncate_lines(input: &str, max_lines: usize, mode: TruncateMode) -> (String, bool) {
     let lines: Vec<&str> = input.lines().collect();
     if lines.len() <= max_lines {
         return (input.to_string(), false);
     }
 
-    let head_count = max_lines * 2 / 5;
-    let tail_count = max_lines * 2 / 5;
+    let omitted = lines.len() - max_lines;
 
-    let head = &lines[..head_count];
-    let tail = &lines[lines.len() - tail_count..];
-    let omitted = lines.len() - head_count - tail_count;
+    match mode {
+        TruncateMode::Top => {
+            let mut result = lines[..max_lines].join("\n");
+            result.push_str(&format!("\n[... {} lines omitted ...]", omitted));
+            (result, true)
+        }
+        TruncateMode::Middle => {
+            let head_count = max_lines * 2 / 5;
+            let tail_count = max_lines * 2 / 5;
+            let omitted = lines.len() - head_count - tail_count;
 
-    let mut result = head.join("\n");
-    result.push_str(&format!("\n[... {} lines omitted ...]\n", omitted));
-    result.push_str(&tail.join("\n"));
-
-    (result, true)
+            let mut result = lines[..head_count].join("\n");
+            result.push_str(&format!("\n[... {} lines omitted ...]\n", omitted));
+            result.push_str(&lines[lines.len() - tail_count..].join("\n"));
+            (result, true)
+        }
+        TruncateMode::Bottom => {
+            let mut result = format!("[... {} lines omitted ...]\n", omitted);
+            result.push_str(&lines[lines.len() - max_lines..].join("\n"));
+            (result, true)
+        }
+    }
 }
 
 fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
@@ -241,7 +256,7 @@ mod tests {
     #[test]
     fn test_truncate_lines_under_limit() {
         let input = "line1\nline2\nline3";
-        let (result, truncated) = truncate_lines(input, 500);
+        let (result, truncated) = truncate_lines(input, 500, TruncateMode::Middle);
         assert_eq!(result, input);
         assert!(!truncated);
     }
@@ -250,7 +265,7 @@ mod tests {
     fn test_truncate_lines_over_limit() {
         let lines: Vec<String> = (1..=600).map(|i| format!("line {i}")).collect();
         let input = lines.join("\n");
-        let (result, truncated) = truncate_lines(&input, 500);
+        let (result, truncated) = truncate_lines(&input, 500, TruncateMode::Middle);
         assert!(truncated);
         assert!(result.starts_with("line 1\n"));
         assert!(result.contains("lines omitted"));
@@ -263,13 +278,37 @@ mod tests {
     fn test_truncate_lines_preserves_head_tail() {
         let lines: Vec<String> = (1..=1000).map(|i| format!("line {i}")).collect();
         let input = lines.join("\n");
-        let (result, truncated) = truncate_lines(&input, 500);
+        let (result, truncated) = truncate_lines(&input, 500, TruncateMode::Middle);
         assert!(truncated);
         // 40% of 500 = 200 head lines, 200 tail lines
         assert!(result.contains("line 200"));
         assert!(!result.contains("line 201\n"));
         assert!(result.contains("line 801"));
         assert!(result.contains("[... 600 lines omitted ...]"));
+    }
+
+    #[test]
+    fn test_truncate_top_keeps_first_lines() {
+        let lines: Vec<String> = (1..=100).map(|i| format!("line {i}")).collect();
+        let input = lines.join("\n");
+        let (result, truncated) = truncate_lines(&input, 10, TruncateMode::Top);
+        assert!(truncated);
+        assert!(result.starts_with("line 1\n"));
+        assert!(result.contains("line 10\n"));
+        assert!(!result.contains("line 11"));
+        assert!(result.ends_with("[... 90 lines omitted ...]"));
+    }
+
+    #[test]
+    fn test_truncate_bottom_keeps_last_lines() {
+        let lines: Vec<String> = (1..=100).map(|i| format!("line {i}")).collect();
+        let input = lines.join("\n");
+        let (result, truncated) = truncate_lines(&input, 10, TruncateMode::Bottom);
+        assert!(truncated);
+        assert!(result.starts_with("[... 90 lines omitted ...]\n"));
+        assert!(result.contains("line 91\n"));
+        assert!(result.ends_with("line 100"));
+        assert!(!result.contains("line 90\n"));
     }
 
     #[test]

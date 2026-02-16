@@ -1,6 +1,7 @@
 match = "bun run"
 
 [optimize]
+truncate = "bottom"
 strip = [
     # Turbo boilerplate
     "^• Packages in scope:",

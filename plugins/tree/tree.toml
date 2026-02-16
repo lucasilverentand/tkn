@@ -4,6 +4,7 @@ match = "tree"
 add = ["--gitignore"]
 
 [optimize]
+truncate = "top"
 strip = [
     "\\d+ directories, \\d+ files",
 ]

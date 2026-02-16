@@ -1,6 +1,7 @@
 match = "git log"
 
 [optimize]
+truncate = "top"
 strip = [
     "^commit [a-f0-9]",
     "^Author:",

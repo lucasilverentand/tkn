@@ -1,6 +1,7 @@
 match = "find"
 
 [optimize]
+truncate = "top"
 strip = [
     "Permission denied",
     "/\\.git/",

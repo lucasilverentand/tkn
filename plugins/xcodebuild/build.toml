@@ -1,6 +1,7 @@
 match = "xcodebuild build"
 
 [optimize]
+truncate = "bottom"
 keep = [
     "(?i)error[:\\[]",
     "(?i)warning[:\\[]",

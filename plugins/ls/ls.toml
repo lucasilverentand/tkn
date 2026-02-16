@@ -7,6 +7,7 @@ add = [
 ]
 
 [optimize]
+truncate = "top"
 strip = [
     # "total N" header in long format
     "^total \\d+",

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::tool_config::TransformConfig;
+use crate::tool_config::{TransformConfig, TruncateMode};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
@@ -254,6 +254,8 @@ pub struct OptimizeOverrides {
     pub strip: Option<Vec<String>>,
     pub keep: Option<Vec<String>>,
     pub replace: Option<Vec<crate::tool_config::ReplaceRule>>,
+    pub truncate: Option<TruncateMode>,
+    pub optimize_stderr: Option<bool>,
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 match = "cargo clippy"
 
 [optimize]
+truncate = "bottom"
 strip = [
     "^\\s*Compiling\\s",
     "^\\s*Checking\\s",

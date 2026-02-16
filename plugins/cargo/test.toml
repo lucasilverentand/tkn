@@ -1,6 +1,7 @@
 match = "cargo test"
 
 [optimize]
+truncate = "bottom"
 strip = [
     "^test .+ \\.\\.\\. ok$",
     "^\\s*Finished\\s",

@@ -7,6 +7,15 @@ use serde::Deserialize;
 use crate::storage::StorageManager;
 use crate::types::{normalize_tool, PluginOverrides, Settings};
 
+#[derive(Debug, Clone, Copy, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TruncateMode {
+    Top,
+    #[default]
+    Middle,
+    Bottom,
+}
+
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ToolConfig {
     #[serde(rename = "match")]
@@ -55,6 +64,15 @@ pub struct OptimizeConfig {
     /// Skip blank-line collapse and trailing-whitespace trim (only ANSI strip + CR resolve).
     #[serde(default)]
     pub raw: bool,
+
+    /// Truncation strategy: "top" (keep first lines), "middle" (head+tail, default), "bottom" (keep last lines).
+    #[serde(default)]
+    pub truncate: TruncateMode,
+
+    /// When true, stderr goes through the same optimization pipeline as stdout.
+    /// When false (default), stderr is only ANSI-stripped and appended unfiltered/untruncated.
+    #[serde(default)]
+    pub optimize_stderr: bool,
 }
 
 /// Returns all built-in plugins as (bundle, name, toml_content) triples.
@@ -169,6 +187,12 @@ fn apply_overrides(config: &mut ToolConfig, overrides: &PluginOverrides) {
         }
         if let Some(ref replace) = o.replace {
             config.optimize.replace = replace.clone();
+        }
+        if let Some(truncate) = o.truncate {
+            config.optimize.truncate = truncate;
+        }
+        if let Some(optimize_stderr) = o.optimize_stderr {
+            config.optimize.optimize_stderr = optimize_stderr;
         }
     }
 }

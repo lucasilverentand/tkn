@@ -1,6 +1,7 @@
 match = "grep"
 
 [optimize]
+truncate = "top"
 strip = [
     "^Binary file .* matches$",
     "Permission denied",

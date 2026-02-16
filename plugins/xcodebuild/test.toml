@@ -1,6 +1,7 @@
 match = "xcodebuild test"
 
 [optimize]
+truncate = "bottom"
 keep = [
     # Test lifecycle
     "^[◇✔✘☐] (Test|Suite|Test run) ",

@@ -37,16 +37,50 @@ pub fn run(args: &[String]) -> i32 {
     let ref_id = Uuid::new_v4().to_string().replace('-', "")[..8].to_string();
     let (result, duration_ms) = runner::run_command(&actual_command);
 
-    // Combine stdout + stderr for optimization
-    let mut raw_output = result.stdout.clone();
-    if !result.stderr.is_empty() {
-        if !raw_output.is_empty() && !raw_output.ends_with(b"\n") {
-            raw_output.push(b'\n');
-        }
-        raw_output.extend_from_slice(&result.stderr);
-    }
+    // Determine whether stderr should go through the full optimizer pipeline.
+    // Default: only ANSI-strip stderr so error messages always reach the AI.
+    let optimize_stderr = config.as_ref().is_some_and(|c| c.optimize.optimize_stderr);
 
-    let optimized = optimizer::run_pipeline(&raw_output, config.as_ref());
+    let (raw_output, optimized) = if optimize_stderr || result.stderr.is_empty() {
+        // Legacy path: combine stdout+stderr and optimize together
+        let mut raw = result.stdout.clone();
+        if !result.stderr.is_empty() {
+            if !raw.is_empty() && !raw.ends_with(b"\n") {
+                raw.push(b'\n');
+            }
+            raw.extend_from_slice(&result.stderr);
+        }
+        let opt = optimizer::run_pipeline(&raw, config.as_ref());
+        (raw, opt)
+    } else {
+        // Optimize stdout only; ANSI-strip stderr and append unfiltered
+        let opt_stdout = optimizer::run_pipeline(&result.stdout, config.as_ref());
+        let stderr_clean = optimizer::strip_ansi(&String::from_utf8_lossy(&result.stderr), false);
+
+        let mut raw = result.stdout.clone();
+        if !raw.ends_with(b"\n") && !raw.is_empty() {
+            raw.push(b'\n');
+        }
+        raw.extend_from_slice(&result.stderr);
+
+        let mut content = opt_stdout.content;
+        if !stderr_clean.is_empty() {
+            if !content.is_empty() && !content.ends_with('\n') {
+                content.push('\n');
+            }
+            content.push_str(&stderr_clean);
+        }
+
+        let original_bytes = raw.len();
+        let optimized_bytes = content.len();
+        let opt = crate::types::OptimizedOutput {
+            content,
+            original_bytes,
+            optimized_bytes,
+            was_truncated: opt_stdout.was_truncated,
+        };
+        (raw, opt)
+    };
 
     let storage = StorageManager::new();
     if let Err(e) = storage.init() {
