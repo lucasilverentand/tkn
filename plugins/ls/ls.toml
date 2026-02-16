@@ -23,6 +23,21 @@ strip = [
     "\\.Spotlight-V100$",
     "\\.fseventsd$",
     "\\.Trashes$",
+    # Development noise directories
+    "\\bnode_modules$",
+    "\\b\\.git$",
+    "\\btarget$",
+    "\\b__pycache__$",
+    "\\b\\.next$",
+    "\\b\\.cache$",
+    "\\b\\.turbo$",
+    "\\b\\.pytest_cache$",
+    "\\b\\.mypy_cache$",
+    "\\b\\.venv$",
+    "\\bcoverage$",
+    "\\b\\.nyc_output$",
+    "\\b\\.idea$",
+    "\\b\\.vscode$",
 ]
 max_lines = 50
 

@@ -1,5 +1,11 @@
 match = "git log"
 
+[transform]
+add = [
+    "--oneline|--pretty|--format",
+    "-20|-n|--max-count",
+]
+
 [optimize]
 truncate = "top"
 strip = [

@@ -1,6 +1,7 @@
 match = "git diff"
 
 [optimize]
+truncate = "bottom"
 strip = [
     "^diff --git ",
     "^index [a-f0-9]",
@@ -8,4 +9,8 @@ strip = [
     "^similarity index ",
     "^rename (from|to) ",
     "^copy (from|to) ",
+    "^--- [ab]/",
+    "^\\+\\+\\+ [ab]/",
+    "^\\\\ No newline at end of file",
 ]
+max_lines = 300

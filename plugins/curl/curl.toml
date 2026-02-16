@@ -1,7 +1,11 @@
 match = "curl"
 
+[transform]
+add = ["-s|--silent|-S"]
+
 [optimize]
 strip = [
     "^\\s*%",
     "^\\s*\\d+\\s+\\d+.*--:--:--",
 ]
+max_lines = 200

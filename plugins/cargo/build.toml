@@ -2,6 +2,14 @@ match = "cargo build"
 
 [optimize]
 truncate = "bottom"
+strip = [
+    "^\\s*Compiling\\s",
+    "^\\s*Checking\\s",
+    "^\\s*Downloading\\s",
+    "^\\s*Downloaded\\s",
+    "^\\s*Finished\\s",
+    "^\\s*Locking\\s",
+]
 keep = [
     "(?i)error",
     "(?i)warning",

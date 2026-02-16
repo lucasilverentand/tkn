@@ -6,4 +6,6 @@ strip = [
     "\"node_id\":\\s",
     "\"gravatar_id\":\\s",
     "\"avatar_url\":\\s",
+    "\"site_admin\":\\s",
+    "\"permissions\":\\s",
 ]
