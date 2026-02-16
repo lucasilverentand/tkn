@@ -13,13 +13,21 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
 - Always read an existing plugin TOML before modifying it
 - Always use `tkn replay` to validate changes against real data
 
+## Key Commands
+
+- `tkn logs` — list recent runs with ref_ids, exit codes, sizes, and savings
+- `tkn log <ref_id>` — show the **raw** stored output for a run
+- `tkn replay <ref_id>` — re-run the **current** optimizer pipeline on a stored run (shows optimized output + before/after byte comparison)
+- `tkn analyze scan` — rank all tools by optimization opportunity
+- `tkn analyze report -- <tool>` — detailed stats, boilerplate detection, and output structure for a tool
+
 ## Creating a New Plugin
 
 1. **Gather context** — Determine the target command (e.g., `kubectl get pods`). Ask if unclear.
 
-2. **Check for existing data** — Run `tkn analyze report -- <tool>` to see if there are past runs.
-   - If past runs exist: use `tkn replay <ref_id>` on representative samples (pick small/medium/large based on the analyze report stats)
-   - If no past runs: research the tool's output format (web search for typical output), then either run the command if it's read-only or ask the user to run it
+2. **Find existing data** — Run `tkn logs` to find ref_ids for the target tool, then `tkn analyze report -- <tool>` for aggregate stats.
+   - If past runs exist: use `tkn log <ref_id>` to see raw output and `tkn replay <ref_id>` to see current optimized output. Pick small/medium/large samples based on the analyze report size stats.
+   - If no past runs: research the tool's output format (web search for typical output), then either run the command if it's read-only or ask the user to run it.
 
 3. **Research transforms** — Web search for the tool's CLI flags that reduce noise (formatting, verbosity flags). Propose `[transform]` rules:
    - `add` — flags to inject (e.g., `"--short"`, `"--quiet"`)
@@ -27,12 +35,17 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
    - `replace` — flag substitutions (e.g., `{"--format=table" = "--format=json"}`)
    - **Do NOT add color flags** — ANSI stripping is handled automatically by tkn
 
-4. **Decide strip vs keep strategy:**
-   - If output is mostly noise with a few useful signal lines → use `keep` (allowlist)
-   - If output is mostly useful with some junk lines → use `strip` (blocklist)
-   - Reference `tkn analyze report` boilerplate detection for pattern ideas
+4. **Decide optimization strategy** — Three tools available, can be combined:
 
-5. **Draft the TOML plugin** — Write to `plugins/<bundle>/<tool>.toml` with this structure:
+   - **`strip`** (blocklist) — Remove lines matching patterns. Best when output is mostly useful with some junk lines.
+   - **`keep`** (allowlist) — Only keep lines matching patterns. Best when output is mostly noise with a few useful signal lines.
+   - **`replace`** (condense) — Regex substitutions applied per-line in order. Best for stripping verbose prefixes/metadata while keeping the useful part of each line (e.g., removing `ls -l` permission/owner columns, stripping timestamps).
+
+   `strip` and `keep` are mutually exclusive (`keep` wins if both present), but **`replace` combines with either**. Common pattern: `strip` noise lines + `replace` to condense remaining lines.
+
+   Reference `tkn analyze report` boilerplate detection and common prefixes for pattern ideas.
+
+5. **Draft the TOML plugin** — Write to `plugins/<bundle>/<tool>.toml`:
    ```toml
    match = "<tool> <subcommand>"
 
@@ -44,12 +57,19 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
    strip = ["^pattern_to_remove"]
    # OR
    keep = ["^pattern_to_keep"]
-   # max_lines = 200  # optional: override default 500-line cap
+
+   # Condense verbose lines (combine with strip or keep):
+   # [[optimize.replace]]
+   # pattern = "^verbose_prefix\\s+"
+   # replacement = ""
+
+   # max_lines = 200  # override default 500-line cap
+   # raw = false       # set true to skip blank-line collapse (for tools where whitespace matters)
    ```
 
 6. **Register the plugin** — Add it to `builtin_plugins()` in `src/tool_config.rs` with the appropriate bundle name, plugin name, and `include_str!` path. Update the test count in `test_builtin_plugins_returns_all` and add the bundle to `test_builtin_plugins_have_bundles` if it's new.
 
-7. **Show before/after** — Use `tkn replay <ref_id>` on historical runs (or run the command) to show raw vs optimized output. Present the comparison to the user.
+7. **Validate with replay** — Use the edit-replay loop: after writing/editing the plugin TOML, run `tkn replay <ref_id>` on the same samples from step 2. The footer shows "Previously: X bytes → Now: Y bytes" so you can see the impact. Compare against `tkn log <ref_id>` (raw) to verify nothing important was lost.
 
 8. **Iterate** — Use `AskUserQuestion` to present choices:
    - "Keep this version?" / "Strip more aggressively?" / "Switch from strip to keep?" / "Adjust max_lines?"
@@ -63,11 +83,11 @@ description: Create, improve, or audit tkn optimizer plugins. Use when asked to 
 
 2. Pick the worst-performing plugin (or user-specified one).
 
-3. Run `tkn analyze report -- <tool>` for pattern analysis.
+3. Run `tkn logs` to find ref_ids for the target tool, then `tkn analyze report -- <tool>` for pattern analysis.
 
-4. Use `tkn replay <ref_id>` on representative ref_ids to show current behavior.
+4. Compare raw vs optimized: `tkn log <ref_id>` for raw output, `tkn replay <ref_id>` for current optimized output on representative ref_ids.
 
-5. Propose improvements, show before/after, iterate with the user using `AskUserQuestion`.
+5. Propose improvements, use the edit-replay loop to validate, iterate with the user using `AskUserQuestion`.
 
 ## Plugin TOML Reference
 
@@ -84,9 +104,14 @@ strip = ["^index [a-f0-9]+", "^diff --git"]  # regex patterns to remove lines
 keep = ["^\\+", "^-", "^@@"]                  # regex patterns to keep (overrides strip)
 max_lines = 200                                # override default 500-line cap (can go higher or lower)
 raw = false                                    # set true to skip blank-line collapse
+
+[[optimize.replace]]                           # ordered regex substitutions (condense lines)
+pattern = "^\\d+\\s+"
+replacement = ""
 ```
 
 - **No color flags** — tkn strips ANSI codes automatically; never use `--no-color`, `--color=never`, etc.
-- `strip` and `keep` are mutually exclusive strategies — use one or the other
-- `keep` wins if both are present (lines must match a keep pattern)
+- `strip` and `keep` are mutually exclusive — use one or the other (`keep` wins if both present)
+- `replace` combines with either `strip` or `keep` — applied after filtering
+- `raw = true` — skip blank-line collapse and trailing-whitespace trim; use for tools where whitespace/formatting is meaningful (e.g., formatted tables, tree output)
 - `max_lines` overrides the global 500-line cap — use sparingly for tools that need more or less
