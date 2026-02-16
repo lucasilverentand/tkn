@@ -1,4 +1,5 @@
 use crate::storage::StorageManager;
+use crate::tool_config;
 
 pub fn run(reset: Option<&str>) {
     let storage = StorageManager::new();
@@ -55,10 +56,17 @@ pub fn run(reset: Option<&str>) {
         println!("Per-tool usage");
         println!("{}", "-".repeat(40));
 
+        let patterns = tool_config::collect_patterns();
         let mut tools: Vec<_> = analytics.tools.iter().collect();
         tools.sort_by(|a, b| b.1.count.cmp(&a.1.count));
 
         for (tool, stats) in &tools {
+            let truncated = if tool.len() > 30 { &tool[..30] } else { tool.as_str() };
+            let label = if patterns.contains(tool.as_str()) {
+                format!("{truncated} ✓")
+            } else {
+                truncated.to_string()
+            };
             let saved = stats.total_raw_bytes.saturating_sub(stats.total_optimized_bytes);
             let pct = if stats.total_raw_bytes > 0 {
                 (saved as f64 / stats.total_raw_bytes as f64) * 100.0
@@ -82,8 +90,8 @@ pub fn run(reset: Option<&str>) {
                 format!("  [{}]", extras.join(", "))
             };
             println!(
-                "  {:<20} {:>5}x  saved {:.0}%{}",
-                tool, stats.count, pct, suffix
+                "  {:<22} {:>5}x  saved {:.0}%{}",
+                label, stats.count, pct, suffix
             );
         }
     }
