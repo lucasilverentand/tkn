@@ -38,6 +38,10 @@ pub struct TransformConfig {
 
     #[serde(default)]
     pub replace: HashMap<String, String>,
+
+    /// Estimated multiplier for how much larger output would be without this transform.
+    /// e.g. `savings_factor = 3.0` means untransformed output is ~3x the transformed size.
+    pub savings_factor: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]

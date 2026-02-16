@@ -2,6 +2,7 @@ match = "pytest"
 
 [transform]
 add = ["--tb=short|--tb", "-q|--quiet|-v|--verbose"]
+savings_factor = 2.0
 
 [optimize]
 truncate = "bottom"

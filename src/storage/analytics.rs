@@ -26,6 +26,8 @@ impl StorageManager {
         analytics.total_commands += 1;
         analytics.total_raw_bytes += entry.raw_bytes as u64;
         analytics.total_optimized_bytes += entry.optimized_bytes as u64;
+        let estimated = entry.estimated_raw_bytes.unwrap_or(entry.raw_bytes) as u64;
+        analytics.total_estimated_raw_bytes += estimated;
         analytics.total_duration_ms += entry.duration_ms;
         analytics.last_updated = Some(Utc::now());
 
@@ -34,6 +36,7 @@ impl StorageManager {
         tool_stats.count += 1;
         tool_stats.total_raw_bytes += entry.raw_bytes as u64;
         tool_stats.total_optimized_bytes += entry.optimized_bytes as u64;
+        tool_stats.total_estimated_raw_bytes += estimated;
         if entry.exit_code != 0 {
             tool_stats.failures += 1;
         }
@@ -63,6 +66,7 @@ impl StorageManager {
         analytics.total_commands = analytics.total_commands.saturating_sub(stats.count);
         analytics.total_raw_bytes = analytics.total_raw_bytes.saturating_sub(stats.total_raw_bytes);
         analytics.total_optimized_bytes = analytics.total_optimized_bytes.saturating_sub(stats.total_optimized_bytes);
+        analytics.total_estimated_raw_bytes = analytics.total_estimated_raw_bytes.saturating_sub(stats.total_estimated_raw_bytes);
         self.write_analytics(&analytics)?;
         Ok(true)
     }

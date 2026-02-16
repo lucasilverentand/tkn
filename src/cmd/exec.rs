@@ -59,6 +59,16 @@ pub fn run(args: &[String]) -> i32 {
         None
     };
 
+    // Estimate what raw bytes would have been without transform
+    let estimated_raw_bytes = if transformed_command.is_some() {
+        config
+            .as_ref()
+            .and_then(|c| c.transform.savings_factor)
+            .map(|factor| (optimized.original_bytes as f64 * factor) as usize)
+    } else {
+        None
+    };
+
     let log_entry = LogEntry {
         ref_id: ref_id.clone(),
         command: command.clone(),
@@ -66,6 +76,7 @@ pub fn run(args: &[String]) -> i32 {
         exit_code: result.exit_code,
         raw_bytes: optimized.original_bytes,
         optimized_bytes: optimized.optimized_bytes,
+        estimated_raw_bytes,
         timestamp: Utc::now(),
         duration_ms,
     };
@@ -88,6 +99,7 @@ pub fn run(args: &[String]) -> i32 {
         exit_code: result.exit_code,
         raw_bytes: optimized.original_bytes,
         optimized_bytes: optimized.optimized_bytes,
+        estimated_raw_bytes,
         timestamp: log_entry.timestamp,
         duration_ms,
     };

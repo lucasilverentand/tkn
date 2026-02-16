@@ -5,6 +5,7 @@ add = [
     "-1|-l",  # one-per-line unless long format requested
     "-h",     # human-readable sizes (harmless without -l)
 ]
+# -1 normalizes format but doesn't reduce bytes; no savings_factor
 
 [optimize]
 truncate = "top"

@@ -2,6 +2,7 @@ match = "curl"
 
 [transform]
 add = ["-s|--silent|-S"]
+savings_factor = 1.5
 
 [optimize]
 strip = [

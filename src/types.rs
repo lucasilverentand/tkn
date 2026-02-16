@@ -14,6 +14,8 @@ pub struct LogEntry {
     pub exit_code: i32,
     pub raw_bytes: usize,
     pub optimized_bytes: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub estimated_raw_bytes: Option<usize>,
     pub timestamp: DateTime<Utc>,
     pub duration_ms: u64,
 }
@@ -27,6 +29,8 @@ pub struct SessionEntry {
     pub exit_code: i32,
     pub raw_bytes: usize,
     pub optimized_bytes: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub estimated_raw_bytes: Option<usize>,
     pub timestamp: DateTime<Utc>,
     pub duration_ms: u64,
 }
@@ -45,6 +49,9 @@ pub struct ToolStats {
     /// Times the command was actually transformed by plugin rules
     #[serde(default)]
     pub transformations: u64,
+    /// Accumulated estimated raw bytes (using savings_factor when available)
+    #[serde(default)]
+    pub total_estimated_raw_bytes: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -57,6 +64,9 @@ pub struct Analytics {
     pub last_cleanup: Option<DateTime<Utc>>,
     #[serde(default)]
     pub tools: HashMap<String, ToolStats>,
+    /// Accumulated estimated raw bytes (using savings_factor when available)
+    #[serde(default)]
+    pub total_estimated_raw_bytes: u64,
 }
 
 impl Analytics {
@@ -66,6 +76,16 @@ impl Analytics {
         }
         let saved = self.total_raw_bytes.saturating_sub(self.total_optimized_bytes);
         (saved as f64 / self.total_raw_bytes as f64) * 100.0
+    }
+
+    /// Savings percentage using estimated raw bytes (accounts for transform savings).
+    /// Falls back to regular savings_percent when no estimated data exists.
+    pub fn estimated_savings_percent(&self) -> f64 {
+        if self.total_estimated_raw_bytes == 0 {
+            return self.savings_percent();
+        }
+        let saved = self.total_estimated_raw_bytes.saturating_sub(self.total_optimized_bytes);
+        (saved as f64 / self.total_estimated_raw_bytes as f64) * 100.0
     }
 }
 

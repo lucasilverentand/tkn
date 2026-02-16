@@ -2,6 +2,7 @@ match = "git status"
 
 [transform]
 add = ["--short|-s"]
+savings_factor = 2.5
 
 [optimize]
 strip = [

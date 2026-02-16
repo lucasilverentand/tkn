@@ -2,6 +2,7 @@ match = "tree"
 
 [transform]
 add = ["--gitignore"]
+savings_factor = 10.0
 
 [optimize]
 truncate = "top"

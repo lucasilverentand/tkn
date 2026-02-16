@@ -117,6 +117,7 @@ mod tests {
                 add: add.into_iter().map(String::from).collect(),
                 remove: remove.into_iter().map(String::from).collect(),
                 replace: replace.into_iter().map(|(k, v)| (k.into(), v.into())).collect(),
+                savings_factor: None,
             },
             optimize: OptimizeConfig::default(),
         }

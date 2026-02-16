@@ -5,6 +5,7 @@ add = [
     "--oneline|--pretty|--format",
     "-20|-n|--max-count",
 ]
+savings_factor = 10.0
 
 [optimize]
 truncate = "top"
