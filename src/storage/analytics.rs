@@ -37,6 +37,9 @@ impl StorageManager {
         if entry.exit_code != 0 {
             tool_stats.failures += 1;
         }
+        if entry.transformed_command.is_some() {
+            tool_stats.transformations += 1;
+        }
 
         self.write_analytics(&analytics)
     }

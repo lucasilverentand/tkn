@@ -53,9 +53,16 @@ pub fn run(args: &[String]) -> i32 {
         eprintln!("tkn: failed to init storage: {e}");
     }
 
+    let transformed_command = if actual_command != command {
+        Some(actual_command.clone())
+    } else {
+        None
+    };
+
     let log_entry = LogEntry {
         ref_id: ref_id.clone(),
         command: command.clone(),
+        transformed_command: transformed_command.clone(),
         exit_code: result.exit_code,
         raw_bytes: optimized.original_bytes,
         optimized_bytes: optimized.optimized_bytes,
@@ -77,6 +84,7 @@ pub fn run(args: &[String]) -> i32 {
     let session_entry = SessionEntry {
         ref_id: ref_id.clone(),
         command,
+        transformed_command,
         exit_code: result.exit_code,
         raw_bytes: optimized.original_bytes,
         optimized_bytes: optimized.optimized_bytes,

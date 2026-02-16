@@ -9,6 +9,8 @@ use crate::tool_config::TransformConfig;
 pub struct LogEntry {
     pub ref_id: String,
     pub command: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transformed_command: Option<String>,
     pub exit_code: i32,
     pub raw_bytes: usize,
     pub optimized_bytes: usize,
@@ -20,6 +22,8 @@ pub struct LogEntry {
 pub struct SessionEntry {
     pub ref_id: String,
     pub command: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transformed_command: Option<String>,
     pub exit_code: i32,
     pub raw_bytes: usize,
     pub optimized_bytes: usize,
@@ -38,6 +42,9 @@ pub struct ToolStats {
     /// Times the full unoptimized log was read (signal optimizer strips too much)
     #[serde(default)]
     pub full_log_reads: u64,
+    /// Times the command was actually transformed by plugin rules
+    #[serde(default)]
+    pub transformations: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

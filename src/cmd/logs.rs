@@ -38,6 +38,13 @@ fn show_log(storage: &StorageManager, ref_id: &str, lines: Option<&str>) {
             // Track that the full log was read (optimizer quality signal)
             let patterns = tool_config::collect_patterns();
             let _ = storage.record_full_log_read(&entry.command, &patterns);
+
+            // Show transformation header when command was transformed
+            if let Some(ref transformed) = entry.transformed_command {
+                eprintln!("ORG: {}", entry.command);
+                eprintln!("NEW: {}", transformed);
+                eprintln!();
+            }
         }
         Err(e) => {
             eprintln!("tkn: failed to read metadata for {ref_id}: {e}");

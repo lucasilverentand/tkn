@@ -73,6 +73,9 @@ pub fn run(reset: Option<&str>) {
             if stats.full_log_reads > 0 {
                 extras.push(format!("{} full reads", stats.full_log_reads));
             }
+            if stats.transformations > 0 {
+                extras.push(format!("{} transforms", stats.transformations));
+            }
             let suffix = if extras.is_empty() {
                 String::new()
             } else {
