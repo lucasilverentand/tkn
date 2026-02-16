@@ -1,7 +1,11 @@
 match = "grep"
 
 [optimize]
-max_lines = 200
+strip = [
+    "^Binary file .* matches$",
+    "Permission denied",
+]
+max_lines = 100
 
 # Strip absolute home directory prefix from file paths
 [[optimize.replace]]

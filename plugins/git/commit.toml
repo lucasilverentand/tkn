@@ -4,4 +4,6 @@ match = "git commit"
 strip = [
     "^ (create|delete|copy) mode \\d+",
     "^ rename .+ => .+",
+    "^ .+\\|\\s+\\d+",
 ]
+max_lines = 50

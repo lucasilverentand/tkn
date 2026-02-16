@@ -1,10 +1,11 @@
 match = "git show"
 
-[transform]
-add = ["--no-color"]
-
 [optimize]
 strip = [
+    "^commit [a-f0-9]",
+    "^Author:",
+    "^Date:",
+    "^Merge:",
     "^diff --git ",
     "^index [a-f0-9]",
     "^(old|new) mode ",
@@ -12,4 +13,7 @@ strip = [
     "^similarity index ",
     "^rename (from|to) ",
     "^copy (from|to) ",
+    "^--- [ab]/",
+    "^\\+\\+\\+ [ab]/",
 ]
+max_lines = 200

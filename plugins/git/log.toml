@@ -1,4 +1,10 @@
 match = "git log"
 
-[transform]
-add = ["--no-color"]
+[optimize]
+strip = [
+    "^commit [a-f0-9]",
+    "^Author:",
+    "^Date:",
+    "^Merge:",
+]
+max_lines = 200

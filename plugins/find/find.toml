@@ -3,5 +3,9 @@ match = "find"
 [optimize]
 strip = [
     "Permission denied",
-    "\\.git/objects/[0-9a-f]{2}/[0-9a-f]{38}",
+    "/\\.git/",
+    "/node_modules/",
+    "/__pycache__/",
+    "\\.DS_Store$",
 ]
+max_lines = 300

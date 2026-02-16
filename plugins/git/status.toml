@@ -2,3 +2,10 @@ match = "git status"
 
 [transform]
 add = ["--short|-s"]
+
+[optimize]
+strip = [
+    "(?i)\\.DS_Store$",
+    "(?i)Thumbs\\.db$",
+]
+max_lines = 100
