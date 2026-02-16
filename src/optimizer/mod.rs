@@ -10,6 +10,20 @@ pub use basic::strip_ansi;
 const MAX_OUTPUT_LINES: usize = 500;
 
 pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOutput {
+    run_pipeline_inner(raw, tool_config, true)
+}
+
+/// Like `run_pipeline` but skips line-count truncation.
+/// Filters (strip/keep/replace) and ANSI stripping still apply.
+pub fn run_pipeline_no_truncate(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOutput {
+    run_pipeline_inner(raw, tool_config, false)
+}
+
+fn run_pipeline_inner(
+    raw: &[u8],
+    tool_config: Option<&ToolConfig>,
+    truncate: bool,
+) -> OptimizedOutput {
     let raw_str = String::from_utf8_lossy(raw);
     let original_bytes = raw.len();
 
@@ -23,16 +37,19 @@ pub fn run_pipeline(raw: &[u8], tool_config: Option<&ToolConfig>) -> OptimizedOu
         optimized = apply_tool_filters(&optimized, config);
     }
 
-    // Line cap: use plugin's max_lines if set, otherwise the global default
-    let line_limit = tool_config
-        .and_then(|c| c.optimize.max_lines)
-        .unwrap_or(MAX_OUTPUT_LINES);
-    let truncate_mode = tool_config
-        .map(|c| c.optimize.truncate)
-        .unwrap_or_default();
-    let (truncated_content, line_truncated) = truncate_lines(&optimized, line_limit, truncate_mode);
-    optimized = truncated_content;
-    was_truncated = was_truncated || line_truncated;
+    if truncate {
+        // Line cap: use plugin's max_lines if set, otherwise the global default
+        let line_limit = tool_config
+            .and_then(|c| c.optimize.max_lines)
+            .unwrap_or(MAX_OUTPUT_LINES);
+        let truncate_mode = tool_config
+            .map(|c| c.optimize.truncate)
+            .unwrap_or_default();
+        let (truncated_content, line_truncated) =
+            truncate_lines(&optimized, line_limit, truncate_mode);
+        optimized = truncated_content;
+        was_truncated = was_truncated || line_truncated;
+    }
 
     let optimized_bytes = optimized.len();
 
