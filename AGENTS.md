@@ -1,0 +1,60 @@
+# AGENTS.md
+
+This file provides guidance to Codex when working with code in this repository.
+
+## What is tkn?
+
+`tkn` is a shell proxy that intercepts CLI commands and optimizes their output to reduce token usage for AI assistants.
+
+## Build & Test Commands
+
+- Build: `cargo build`
+- Install: `mise run install` (runs `cargo install --path . --locked`)
+- Test all: `cargo test`
+- Test single: `cargo test <test_name>`
+- Lint: `cargo clippy`
+
+## Codex Usage In This Repo
+
+- Prefer running shell commands through `tkn exec -- <command>` so output is optimized for token efficiency.
+- Use `tkn pass -- <command>` for long-lived or streaming commands (dev servers, watchers, `tail -f`, etc.).
+- Do not wrap `tkn` itself (`tkn exec -- tkn ...`) to avoid recursion.
+
+## Architecture
+
+### Execution Pipeline (`src/cmd/exec.rs`)
+
+1. Transform command arguments via plugin rules.
+2. Execute via `$SHELL -c <command>` and capture stdout/stderr/exit code.
+3. Optimize output (strip ANSI, filter, truncate).
+4. Store raw log + metadata + analytics in `~/.tkn/`.
+5. Display optimized output with a footer.
+
+### Plugin System
+
+Plugins are TOML files in `plugins/` by tool bundle (for example, `plugins/git/diff.toml`):
+
+- `match`: command pattern (for example, `"git diff"`)
+- `[transform]`: `add`, `remove`, `replace` flag rules
+- `[optimize]`: `strip`/`keep` regex filters, `max_lines`, `raw`
+
+Loading priority:
+
+1. User overrides in `~/.tkn/tools/*.toml`
+2. Built-in `plugins/`
+3. `~/.tkn/settings.toml` overrides
+
+### Key Modules
+
+- `src/types.rs`: core types and command normalization
+- `src/tool_config.rs`: plugin loading + config merge + matching
+- `src/transformer.rs`: command flag transforms
+- `src/optimizer/`: output optimization pipeline
+- `src/runner.rs`: shell execution
+- `src/storage/`: persistence (`~/.tkn/logs/`, `analytics.json`, sessions, plugin manifest)
+- `src/cmd/`: subcommand handlers (`exec`, `hook`, `plugin`, `analyze`, `stats`, `logs`, `clean`)
+
+## Important Notes
+
+- Prefer built-in plugins in `plugins/` and do not rely on stale user overrides in `~/.tkn/tools/` when validating behavior.
+- Apple Git does not reliably support `--no-color` for all subcommands; plugin defaults intentionally account for this.
