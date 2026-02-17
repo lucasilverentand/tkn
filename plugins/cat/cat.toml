@@ -1,0 +1,4 @@
+match = "cat"
+
+[optimize]
+max_lines = 200

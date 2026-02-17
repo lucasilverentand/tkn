@@ -1,10 +1,10 @@
 # AGENTS.md
 
-This file provides guidance to Codex when working with code in this repository.
+Shared instructions for Codex and Claude Code in this repository.
 
 ## What is tkn?
 
-`tkn` is a shell proxy that intercepts CLI commands and optimizes their output to reduce token usage for AI assistants.
+`tkn` is a shell proxy that intercepts CLI commands and optimizes command output to reduce token usage for AI assistants.
 
 ## Build & Test Commands
 
@@ -14,11 +14,12 @@ This file provides guidance to Codex when working with code in this repository.
 - Test single: `cargo test <test_name>`
 - Lint: `cargo clippy`
 
-## Codex Usage In This Repo
+## Command Routing
 
-- Prefer running shell commands through `tkn exec -- <command>` so output is optimized for token efficiency.
-- Use `tkn pass -- <command>` for long-lived or streaming commands (dev servers, watchers, `tail -f`, etc.).
-- Do not wrap `tkn` itself (`tkn exec -- tkn ...`) to avoid recursion.
+- Default to `tkn auto -- <command>`.
+- Use `tkn exec -- <command>` when deterministic optimized capture is explicitly desired.
+- Use `tkn pass -- <command>` for long-lived, interactive, or direct-streaming commands.
+- Do not wrap `tkn` with `tkn` (avoid recursion).
 
 ## Architecture
 
@@ -52,7 +53,11 @@ Loading priority:
 - `src/optimizer/`: output optimization pipeline
 - `src/runner.rs`: shell execution
 - `src/storage/`: persistence (`~/.tkn/logs/`, `analytics.json`, sessions, plugin manifest)
-- `src/cmd/`: subcommand handlers (`exec`, `hook`, `plugin`, `analyze`, `stats`, `logs`, `clean`)
+- `src/cmd/`: subcommand handlers (`auto`, `exec`, `pass`, `hook`, `plugin`, `analyze`, `stats`, `logs`, `clean`)
+
+### Hook Integration (`src/cmd/hook.rs`)
+
+`tkn hook install` registers in `~/.claude/settings.json` as a PreToolUse hook. `tkn hook run` reads the hook JSON from stdin, rewrites commands to `tkn auto -- <original command>`, and outputs a JSON response.
 
 ## Important Notes
 

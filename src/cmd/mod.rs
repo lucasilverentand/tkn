@@ -1,4 +1,5 @@
 pub mod analyze;
+pub mod auto;
 pub mod clean;
 pub mod exec;
 pub mod hook;
@@ -7,4 +8,5 @@ pub mod pass;
 pub mod plugin;
 pub mod reasons;
 pub mod replay;
+pub mod routing;
 pub mod stats;

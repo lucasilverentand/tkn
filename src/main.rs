@@ -17,6 +17,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Auto-route command to optimized or passthrough execution
+    Auto {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
     /// Execute a command through the optimization proxy
     Exec {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
@@ -124,6 +129,7 @@ fn main() {
     let cli = Cli::parse();
 
     let exit_code = match cli.command {
+        Commands::Auto { args } => cmd::auto::run(&args),
         Commands::Exec { args } => cmd::exec::run(&args),
         Commands::Pass { args } => cmd::pass::run(&args),
         Commands::Stats { reset, reset_failures } => {
