@@ -1,11 +1,21 @@
 use crate::storage::StorageManager;
 use crate::tool_config;
 
-pub fn run(id: Option<&str>, lines: Option<&str>) {
+pub fn run(id: Option<&str>, reason: Option<&str>, lines: Option<&str>) {
     let storage = StorageManager::new();
 
     match id {
-        Some(ref_id) => show_log(&storage, ref_id, lines),
+        Some(ref_id) => {
+            let reason = match reason {
+                Some(r) if !r.trim().is_empty() => r,
+                _ => {
+                    eprintln!("tkn: a reason is required when viewing a log");
+                    eprintln!("usage: tkn log <ID> \"<reason>\"");
+                    return;
+                }
+            };
+            show_log(&storage, ref_id, reason, lines);
+        }
         None => list_logs(&storage),
     }
 }
@@ -32,12 +42,12 @@ fn parse_line_spec(spec: &str) -> Result<(usize, Option<usize>), String> {
     }
 }
 
-fn show_log(storage: &StorageManager, ref_id: &str, lines: Option<&str>) {
+fn show_log(storage: &StorageManager, ref_id: &str, reason: &str, lines: Option<&str>) {
     match storage.read_log_entry(ref_id) {
         Ok(entry) => {
             // Track that the full log was read (optimizer quality signal)
             let patterns = tool_config::collect_patterns();
-            let _ = storage.record_full_log_read(&entry.command, &patterns);
+            let _ = storage.record_full_log_read(&entry.command, reason, &patterns);
 
             // Show transformation header when command was transformed
             if let Some(ref transformed) = entry.transformed_command {

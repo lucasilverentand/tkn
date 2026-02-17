@@ -40,7 +40,10 @@ enum Commands {
     Log {
         /// Reference ID to show full log for
         id: Option<String>,
+        /// Reason for requesting the full log (required when viewing a log)
+        reason: Option<String>,
         /// Line range (e.g., "10:20") or single line number (e.g., "42")
+        #[arg(long)]
         lines: Option<String>,
     },
     /// Install or uninstall the Claude Code hook
@@ -125,8 +128,8 @@ fn main() {
             cmd::stats::run(reset.as_deref(), reset_failures.as_deref());
             0
         }
-        Commands::Log { id, lines } => {
-            cmd::logs::run(id.as_deref(), lines.as_deref());
+        Commands::Log { id, reason, lines } => {
+            cmd::logs::run(id.as_deref(), reason.as_deref(), lines.as_deref());
             0
         }
         Commands::Hook { action } => {

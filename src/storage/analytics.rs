@@ -61,12 +61,28 @@ impl StorageManager {
     }
 
     /// Record that a full log was read for a given command (signals optimizer may strip too much).
-    pub fn record_full_log_read(&self, command: &str, patterns: &HashSet<String>) -> std::io::Result<()> {
+    pub fn record_full_log_read(&self, command: &str, reason: &str, patterns: &HashSet<String>) -> std::io::Result<()> {
         let mut analytics = self.read_analytics();
         let tool = normalize_tool(command, patterns);
-        let tool_stats = analytics.tools.entry(tool).or_insert_with(ToolStats::default);
+        let tool_stats = analytics.tools.entry(tool.clone()).or_insert_with(ToolStats::default);
         tool_stats.full_log_reads += 1;
-        self.write_analytics(&analytics)
+        self.write_analytics(&analytics)?;
+
+        // Append reason to JSONL log for trend analysis
+        let reason_entry = serde_json::json!({
+            "timestamp": Utc::now().to_rfc3339(),
+            "tool": tool,
+            "command": command,
+            "reason": reason,
+        });
+        let reasons_path = self.base_dir.join("log_reasons.jsonl");
+        let mut file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&reasons_path)?;
+        writeln!(file, "{}", reason_entry)?;
+
+        Ok(())
     }
 
     /// Reset only the failure count for a specific tool.

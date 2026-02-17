@@ -110,9 +110,9 @@ pub fn run(args: &[String]) -> i32 {
     let saved = optimized.original_bytes.saturating_sub(optimized.optimized_bytes);
     let meaningful = saved > 10 && optimized.original_bytes > 0;
     if meaningful && optimized.was_truncated {
-        eprintln!("output truncated and optimized, for full output run: tkn log {ref_id}");
+        eprintln!("output truncated and optimized, for full output run: tkn log {ref_id} \"<reason>\"");
     } else if meaningful {
-        eprintln!("output optimized, for full output run: tkn log {ref_id}");
+        eprintln!("output optimized, for full output run: tkn log {ref_id} \"<reason>\"");
     }
 
     result.exit_code
