@@ -49,9 +49,7 @@ pub fn run(args: &[String]) -> i32 {
     };
 
     let storage = StorageManager::new();
-    if let Err(e) = storage.init() {
-        eprintln!("tkn: failed to init storage: {e}");
-    }
+    let _ = storage.init();
 
     let transformed_command = if actual_command != command {
         Some(actual_command.clone())
@@ -81,17 +79,9 @@ pub fn run(args: &[String]) -> i32 {
         duration_ms,
     };
 
-    // Write log (best-effort)
-    if let Err(e) = storage.write_log(&ref_id, &raw_output, &log_entry) {
-        eprintln!("tkn: failed to write log: {e}");
-    }
-
-    // Update analytics (best-effort)
-    if let Err(e) = storage.update_analytics_with_patterns(&log_entry, &patterns) {
-        eprintln!("tkn: failed to update analytics: {e}");
-    }
-
-    // Append session entry (best-effort)
+    // Best-effort persistence — silently ignore errors (e.g. read-only filesystem over SSH)
+    let _ = storage.write_log(&ref_id, &raw_output, &log_entry);
+    let _ = storage.update_analytics_with_patterns(&log_entry, &patterns);
     let session_entry = SessionEntry {
         ref_id: ref_id.clone(),
         command,
@@ -103,9 +93,7 @@ pub fn run(args: &[String]) -> i32 {
         timestamp: log_entry.timestamp,
         duration_ms,
     };
-    if let Err(e) = storage.append_session_entry(&session_entry) {
-        eprintln!("tkn: failed to append session: {e}");
-    }
+    let _ = storage.append_session_entry(&session_entry);
 
     // Opportunistic cleanup
     storage.maybe_auto_cleanup();
