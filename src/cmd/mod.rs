@@ -5,5 +5,6 @@ pub mod hook;
 pub mod logs;
 pub mod pass;
 pub mod plugin;
+pub mod reasons;
 pub mod replay;
 pub mod stats;

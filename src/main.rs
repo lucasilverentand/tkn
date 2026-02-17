@@ -65,6 +65,8 @@ enum Commands {
         #[command(subcommand)]
         action: AnalyzeAction,
     },
+    /// Show trends in full log read reasons
+    Reasons,
     /// Replay a stored command through the current optimizer pipeline
     Replay {
         /// Reference ID of the log entry to replay
@@ -149,6 +151,10 @@ fn main() {
                 AnalyzeAction::Scan => cmd::analyze::scan(),
                 AnalyzeAction::Report { args } => cmd::analyze::report(&args),
             }
+            0
+        }
+        Commands::Reasons => {
+            cmd::reasons::run();
             0
         }
         Commands::Replay { id } => {
