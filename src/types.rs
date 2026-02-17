@@ -69,26 +69,6 @@ pub struct Analytics {
     pub total_estimated_raw_bytes: u64,
 }
 
-impl Analytics {
-    pub fn savings_percent(&self) -> f64 {
-        if self.total_raw_bytes == 0 {
-            return 0.0;
-        }
-        let saved = self.total_raw_bytes.saturating_sub(self.total_optimized_bytes);
-        (saved as f64 / self.total_raw_bytes as f64) * 100.0
-    }
-
-    /// Savings percentage using estimated raw bytes (accounts for transform savings).
-    /// Falls back to regular savings_percent when no estimated data exists.
-    pub fn estimated_savings_percent(&self) -> f64 {
-        if self.total_estimated_raw_bytes == 0 {
-            return self.savings_percent();
-        }
-        let saved = self.total_estimated_raw_bytes.saturating_sub(self.total_optimized_bytes);
-        (saved as f64 / self.total_estimated_raw_bytes as f64) * 100.0
-    }
-}
-
 
 /// Commands that wrap/delegate to another command.
 /// Each entry: (name, flags_that_consume_next_arg, skip_positional_count).

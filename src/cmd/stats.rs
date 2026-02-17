@@ -35,34 +35,24 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) {
     println!("tkn analytics");
     println!("{}", "-".repeat(40));
     println!("Total commands:   {}", analytics.total_commands);
+    let effective_raw = analytics.total_estimated_raw_bytes.max(analytics.total_raw_bytes);
     println!(
         "Total raw bytes:  {} ({:.1} KB)",
-        analytics.total_raw_bytes,
-        analytics.total_raw_bytes as f64 / 1024.0
+        effective_raw,
+        effective_raw as f64 / 1024.0
     );
     println!(
         "Total optimized:  {} ({:.1} KB)",
         analytics.total_optimized_bytes,
         analytics.total_optimized_bytes as f64 / 1024.0
     );
-    let saved = analytics
-        .total_raw_bytes
-        .saturating_sub(analytics.total_optimized_bytes);
-    println!(
-        "Bytes saved:      {} ({:.1}%)",
-        saved,
-        analytics.savings_percent()
-    );
-    if analytics.total_estimated_raw_bytes > analytics.total_raw_bytes {
-        let est_saved = analytics
-            .total_estimated_raw_bytes
-            .saturating_sub(analytics.total_optimized_bytes);
-        println!(
-            "Est. total saved: {} ({:.1}%) incl. transform savings",
-            est_saved,
-            analytics.estimated_savings_percent()
-        );
-    }
+    let saved = effective_raw.saturating_sub(analytics.total_optimized_bytes);
+    let pct = if effective_raw > 0 {
+        (saved as f64 / effective_raw as f64) * 100.0
+    } else {
+        0.0
+    };
+    println!("Bytes saved:      {} ({:.1}%)", saved, pct);
     println!(
         "Avg duration:     {:.0} ms",
         analytics.total_duration_ms as f64 / analytics.total_commands as f64
@@ -136,10 +126,12 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) {
         for (main_cmd, entries) in &sorted_groups {
             let group_count: u64 = entries.iter().map(|(_, s)| s.count).sum();
             let group_raw: u64 = entries.iter().map(|(_, s)| s.total_raw_bytes).sum();
+            let group_est: u64 = entries.iter().map(|(_, s)| s.total_estimated_raw_bytes).sum();
+            let group_effective = group_est.max(group_raw);
             let group_opt: u64 = entries.iter().map(|(_, s)| s.total_optimized_bytes).sum();
-            let group_saved = group_raw.saturating_sub(group_opt);
-            let group_pct = if group_raw > 0 {
-                (group_saved as f64 / group_raw as f64) * 100.0
+            let group_pct = if group_effective > 0 {
+                let group_saved = group_effective.saturating_sub(group_opt);
+                (group_saved as f64 / group_effective as f64) * 100.0
             } else {
                 0.0
             };
@@ -151,20 +143,8 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) {
                 print_tool_line(tool, stats, &patterns, "  ", width);
             } else {
                 // Group header
-                let group_est: u64 = entries.iter().map(|(_, s)| s.total_estimated_raw_bytes).sum();
-                let group_suffix = if group_est > group_raw {
-                    let est_saved = group_est.saturating_sub(group_opt);
-                    let est_pct = if group_est > 0 {
-                        (est_saved as f64 / group_est as f64) * 100.0
-                    } else {
-                        0.0
-                    };
-                    format!("  (~{:.0}% incl. transforms)", est_pct)
-                } else {
-                    String::new()
-                };
                 let header_width = col - 2; // indent=2
-                println!("  {:<header_width$} {:>5}x  saved {:.0}%{}", main_cmd, group_count, group_pct, group_suffix);
+                println!("  {:<header_width$} {:>5}x  saved {:.0}%", main_cmd, group_count, group_pct);
                 let sub_width = col - 4; // indent=4
                 for (tool, stats) in entries {
                     print_tool_line(tool, stats, &patterns, "    ", sub_width);
@@ -199,9 +179,10 @@ fn print_tool_line(
         0
     };
 
-    let saved = stats.total_raw_bytes.saturating_sub(stats.total_optimized_bytes);
-    let pct = if stats.total_raw_bytes > 0 {
-        (saved as f64 / stats.total_raw_bytes as f64) * 100.0
+    let effective_raw = stats.total_estimated_raw_bytes.max(stats.total_raw_bytes);
+    let pct = if effective_raw > 0 {
+        let saved = effective_raw.saturating_sub(stats.total_optimized_bytes);
+        (saved as f64 / effective_raw as f64) * 100.0
     } else {
         0.0
     };
@@ -215,17 +196,6 @@ fn print_tool_line(
     }
     if stats.transformations > 0 {
         extras.push(format!("{} transforms", stats.transformations));
-    }
-    if stats.total_estimated_raw_bytes > stats.total_raw_bytes {
-        let est_pct = if stats.total_estimated_raw_bytes > 0 {
-            let est_saved = stats
-                .total_estimated_raw_bytes
-                .saturating_sub(stats.total_optimized_bytes);
-            (est_saved as f64 / stats.total_estimated_raw_bytes as f64) * 100.0
-        } else {
-            0.0
-        };
-        extras.push(format!("~{:.0}% incl. transforms", est_pct));
     }
     let suffix = if extras.is_empty() {
         String::new()
