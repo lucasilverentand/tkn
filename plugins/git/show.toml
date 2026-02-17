@@ -17,4 +17,4 @@ strip = [
     "^\\+\\+\\+ [ab]/",
     "^\\\\ No newline at end of file",
 ]
-max_lines = 200
+max_lines = 150

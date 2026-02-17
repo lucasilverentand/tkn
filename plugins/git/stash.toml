@@ -19,5 +19,11 @@ strip = [
     "^Auto-merging ",
     # Git hints
     "^\\(use \"git ",
+    # Status boilerplate from stash pop conflicts
+    "^On branch ",
+    "^Your branch is ",
+    "^Untracked files:",
+    "^Changes not staged",
+    "^no changes added",
 ]
-max_lines = 100
+max_lines = 50

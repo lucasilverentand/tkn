@@ -25,5 +25,7 @@ strip = [
     "/\\.vscode/",
     "/\\.eggs/",
     "\\.egg-info/",
+    "/build/",
+    "/out/",
 ]
-max_lines = 300
+max_lines = 150
