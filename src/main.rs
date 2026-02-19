@@ -1,6 +1,7 @@
 mod cmd;
 mod optimizer;
 mod runner;
+mod shell;
 mod storage;
 mod tool_config;
 mod transformer;

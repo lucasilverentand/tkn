@@ -3,13 +3,14 @@ use uuid::Uuid;
 
 use crate::optimizer;
 use crate::runner;
+use crate::shell;
 use crate::storage::StorageManager;
 use crate::tool_config;
 use crate::transformer;
 use crate::types::{LogEntry, SessionEntry};
 
 pub fn run(args: &[String]) -> i32 {
-    let command = args.join(" ");
+    let command = shell::args_to_shell_command(args);
 
     if command.is_empty() {
         eprintln!("tkn: no command provided");

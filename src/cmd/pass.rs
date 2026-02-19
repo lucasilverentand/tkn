@@ -1,5 +1,7 @@
+use crate::shell;
+
 pub fn run(args: &[String]) -> i32 {
-    let command = args.join(" ");
+    let command = shell::args_to_shell_command(args);
 
     if command.is_empty() {
         eprintln!("tkn: no command provided");

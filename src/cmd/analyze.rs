@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::storage::StorageManager;
 use crate::tool_config;
 use crate::types::normalize_tool;
+use crate::shell;
 
 pub fn scan() {
     let storage = StorageManager::new();
@@ -124,7 +125,7 @@ pub fn report(args: &[String]) {
         std::process::exit(1);
     }
 
-    let command = args.join(" ");
+    let command = shell::args_to_shell_command(args);
     let patterns = tool_config::collect_patterns();
     let tool_name = normalize_tool(&command, &patterns);
     let storage = StorageManager::new();
