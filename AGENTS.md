@@ -37,7 +37,7 @@ Plugins are TOML files in `plugins/` by tool bundle (for example, `plugins/git/d
 
 - `match`: command pattern (for example, `"git diff"`)
 - `[transform]`: `add`, `remove`, `replace` flag rules
-- `[optimize]`: `strip`/`keep` regex filters, `max_lines`, `raw`
+- `[optimize]`: `strip`/`keep` regex filters, `replace` rules, `max_lines`, `truncate` mode, `raw`
 
 Loading priority:
 
@@ -53,7 +53,7 @@ Loading priority:
 - `src/optimizer/`: output optimization pipeline
 - `src/runner.rs`: shell execution
 - `src/storage/`: persistence (`~/.tkn/logs/`, `analytics.json`, sessions, plugin manifest)
-- `src/cmd/`: subcommand handlers (`auto`, `exec`, `pass`, `hook`, `plugin`, `analyze`, `stats`, `logs`, `clean`)
+- `src/cmd/`: subcommand handlers (`auto`, `exec`, `pass`, `hook`, `plugin`, `analyze`, `stats`, `logs`, `clean`, `reasons`, `replay`)
 
 ### Hook Integration (`src/cmd/hook.rs`)
 

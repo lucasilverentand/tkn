@@ -90,8 +90,8 @@ fn list_logs(storage: &StorageManager) {
         }
         Ok(entries) => {
             println!(
-                "{:<16} {:<8} {:<12} {:<10} {}",
-                "REF", "EXIT", "SIZE", "SAVED", "COMMAND"
+                "{:<16} {:<8} {:<12} {:<10} COMMAND",
+                "REF", "EXIT", "SIZE", "SAVED"
             );
             println!("{}", "-".repeat(72));
             for entry in entries.iter().take(20) {

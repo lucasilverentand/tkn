@@ -108,7 +108,7 @@ const PREFIX_COMMANDS: &[(&str, &[&str], usize)] = &[
 /// plugin match patterns for multi-level subcommand detection (e.g. "xcresulttool get test-results").
 /// When no pattern matches, falls back to base + first non-flag non-path word.
 pub fn normalize_tool(command: &str, patterns: &HashSet<String>) -> String {
-    let words: Vec<&str> = command.trim().split_whitespace().collect();
+    let words: Vec<&str> = command.split_whitespace().collect();
     let mut i = 0;
 
     // Phase 1: Skip env vars and prefix/wrapper commands

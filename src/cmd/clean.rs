@@ -19,11 +19,9 @@ pub fn run(logs_only: bool, stats_only: bool) {
         }
     }
 
-    if clean_all || stats_only {
-        if storage.analytics_path().exists() {
-            if let Err(e) = fs::remove_file(storage.analytics_path()) {
-                eprintln!("tkn: failed to remove analytics: {e}");
-            }
+    if (clean_all || stats_only) && storage.analytics_path().exists() {
+        if let Err(e) = fs::remove_file(storage.analytics_path()) {
+            eprintln!("tkn: failed to remove analytics: {e}");
         }
     }
 

@@ -12,7 +12,7 @@ impl StorageManager {
         fs::write(&log_path, raw_output)?;
 
         let json = serde_json::to_string_pretty(entry)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
         fs::write(&meta_path, json)?;
 
         Ok(())
@@ -27,7 +27,7 @@ impl StorageManager {
         let meta_path = self.logs_dir().join(format!("{ref_id}.json"));
         let content = fs::read_to_string(&meta_path)?;
         serde_json::from_str(&content)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+            .map_err(std::io::Error::other)
     }
 
     pub fn list_log_entries(&self) -> std::io::Result<Vec<LogEntry>> {

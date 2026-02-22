@@ -4,7 +4,7 @@ use std::io::Write;
 
 use chrono::Utc;
 
-use crate::types::{Analytics, LogEntry, ToolStats, normalize_tool};
+use crate::types::{Analytics, LogEntry, normalize_tool};
 
 use super::StorageManager;
 
@@ -45,7 +45,7 @@ impl StorageManager {
         analytics.last_updated = Some(Utc::now());
 
         let tool = normalize_tool(&entry.command, patterns);
-        let tool_stats = analytics.tools.entry(tool).or_insert_with(ToolStats::default);
+        let tool_stats = analytics.tools.entry(tool).or_default();
         tool_stats.count += 1;
         tool_stats.total_raw_bytes += entry.raw_bytes as u64;
         tool_stats.total_optimized_bytes += entry.optimized_bytes as u64;
@@ -64,7 +64,7 @@ impl StorageManager {
     pub fn record_full_log_read(&self, command: &str, reason: &str, patterns: &HashSet<String>) -> std::io::Result<()> {
         let mut analytics = self.read_analytics();
         let tool = normalize_tool(command, patterns);
-        let tool_stats = analytics.tools.entry(tool.clone()).or_insert_with(ToolStats::default);
+        let tool_stats = analytics.tools.entry(tool.clone()).or_default();
         tool_stats.full_log_reads += 1;
         self.write_analytics(&analytics)?;
 
@@ -115,7 +115,7 @@ impl StorageManager {
     pub fn write_analytics(&self, analytics: &Analytics) -> std::io::Result<()> {
         let path = self.analytics_path();
         let json = serde_json::to_string_pretty(analytics)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
 
         // Atomic write via temp file + rename
         let tmp_path = path.with_extension("json.tmp");

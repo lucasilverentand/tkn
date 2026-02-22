@@ -23,7 +23,7 @@ impl StorageManager {
         let path = self.plugins_manifest_path();
         let tmp = path.with_extension("json.tmp");
         let content = serde_json::to_string_pretty(manifest)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            .map_err(io::Error::other)?;
         fs::write(&tmp, &content)?;
         fs::rename(&tmp, &path)?;
         Ok(())

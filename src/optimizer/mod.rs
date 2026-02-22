@@ -28,7 +28,7 @@ fn run_pipeline_inner(
     let original_bytes = raw.len();
 
     // Always: strip ANSI + resolve \r. Unless plugin opts into raw, also trim whitespace + collapse blanks.
-    let raw_mode = tool_config.map_or(false, |c| c.optimize.raw);
+    let raw_mode = tool_config.is_some_and(|c| c.optimize.raw);
     let mut optimized = strip_ansi(&raw_str, raw_mode);
     let mut was_truncated = false;
 

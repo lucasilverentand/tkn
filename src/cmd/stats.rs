@@ -173,11 +173,7 @@ fn print_tool_line(
     let label = format!("{truncated}{marker}");
     // ✓ is multi-byte but 1 display column; pad manually
     let display_len = truncated.len() + if has_plugin { 2 } else { 0 };
-    let padding = if display_len < width {
-        width - display_len
-    } else {
-        0
-    };
+    let padding = width.saturating_sub(display_len);
 
     let effective_raw = stats.total_estimated_raw_bytes.max(stats.total_raw_bytes);
     let pct = if effective_raw > 0 {
