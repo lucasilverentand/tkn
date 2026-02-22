@@ -147,6 +147,19 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("git", "git-fetch", include_str!("../plugins/git/fetch.toml")),
         ("git", "git-add", include_str!("../plugins/git/add.toml")),
         ("git", "git-blame", include_str!("../plugins/git/blame.toml")),
+        // biome
+        ("biome", "biome-check", include_str!("../plugins/biome/check.toml")),
+        ("biome", "biome-format", include_str!("../plugins/biome/format.toml")),
+        ("biome", "biome-lint", include_str!("../plugins/biome/lint.toml")),
+        // swift
+        ("swift", "swift-build", include_str!("../plugins/swift/build.toml")),
+        ("swift", "swift-test", include_str!("../plugins/swift/test.toml")),
+        // wrangler
+        ("wrangler", "wrangler-deploy", include_str!("../plugins/wrangler/deploy.toml")),
+        ("wrangler", "wrangler-publish", include_str!("../plugins/wrangler/publish.toml")),
+        // deno
+        ("deno", "deno-test", include_str!("../plugins/deno/test.toml")),
+        ("deno", "deno-bench", include_str!("../plugins/deno/bench.toml")),
         // misc
         ("wget", "wget", include_str!("../plugins/wget/wget.toml")),
         ("make", "make", include_str!("../plugins/make/make.toml")),
@@ -316,12 +329,21 @@ mod tests {
         assert!(names.contains(&"cargo build"));
         assert!(names.contains(&"cargo test"));
         assert!(names.contains(&"cargo clippy"));
+        assert!(names.contains(&"biome check"));
+        assert!(names.contains(&"biome lint"));
+        assert!(names.contains(&"biome format"));
+        assert!(names.contains(&"swift build"));
+        assert!(names.contains(&"swift test"));
+        assert!(names.contains(&"wrangler deploy"));
+        assert!(names.contains(&"wrangler publish"));
+        assert!(names.contains(&"deno test"));
+        assert!(names.contains(&"deno bench"));
     }
 
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 60);
+        assert_eq!(plugins.len(), 69);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));

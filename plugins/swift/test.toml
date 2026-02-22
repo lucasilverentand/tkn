@@ -1,0 +1,14 @@
+match = "swift test"
+
+[optimize]
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\s*Compiling\\s",
+    "^\\s*Linking\\s",
+    "^Build complete!",
+    "^\\s*\\[\\d+/\\d+\\]\\s",
+    "^Test Case .+ passed",
+    "◇ Test .+ passed",
+]

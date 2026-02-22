@@ -1,0 +1,11 @@
+match = "biome lint"
+
+[optimize]
+truncate = "bottom"
+max_lines = 150
+strip = [
+    "^\\s*$",
+    "^Found \\d+ errors?\\.$",
+    "^\\[\\*\\] \\d+ fixable with",
+    "^Checked \\d+ files?",
+]

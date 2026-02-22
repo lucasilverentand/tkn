@@ -1,0 +1,11 @@
+match = "wrangler deploy"
+
+[optimize]
+truncate = "bottom"
+strip = [
+    "^\\s*$",
+    "^Uploading\\.\\.\\.",
+    "^Total Upload:",
+    "^Worker Startup Time:",
+    "^Bundle Size:",
+]

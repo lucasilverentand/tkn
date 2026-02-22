@@ -1,0 +1,10 @@
+match = "biome format"
+
+[optimize]
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^Formatted \\d+ files?",
+    "^All files formatted",
+]

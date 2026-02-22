@@ -1,0 +1,10 @@
+match = "swift build"
+
+[optimize]
+truncate = "bottom"
+keep = [
+    "(?i)error[:\\[]",
+    "(?i)warning[:\\[]",
+    "^Build complete!",
+    "build failed",
+]

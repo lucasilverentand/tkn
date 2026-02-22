@@ -1,5 +1,5 @@
 /// Package runner wrappers that should be stripped before matching.
-const PACKAGE_RUNNERS: &[&str] = &["npx", "pnpx", "bunx"];
+const PACKAGE_RUNNERS: &[&str] = &["npx", "pnpx", "bunx", "npm exec"];
 
 /// Patterns that indicate a long-running / streaming process.
 const LONG_LIVED_PREFIXES: &[&str] = &[
@@ -45,9 +45,18 @@ const LONG_LIVED_PREFIXES: &[&str] = &[
     // Rust
     "cargo watch",
     "cargo run",
+    // Cloudflare
+    "wrangler dev",
+    "wrangler pages dev",
+    // Mise
+    "mise run dev",
+    "mise run start",
+    "mise run serve",
+    "mise run watch",
     // Deno
     "deno task dev",
     "deno serve",
+    "deno run",
     // .NET
     "dotnet run",
     "dotnet watch",
@@ -279,6 +288,47 @@ mod tests {
         assert!(is_long_lived("tsc --watch"));
         assert!(is_long_lived("parcel index.html --hot"));
         assert!(is_long_lived("eleventy --serve"));
+    }
+
+    #[test]
+    fn test_long_lived_wrangler() {
+        assert!(is_long_lived("wrangler dev"));
+        assert!(is_long_lived("wrangler dev --port 8787"));
+        assert!(is_long_lived("wrangler pages dev ./dist"));
+        // deploy is not long-lived
+        assert!(!is_long_lived("wrangler deploy"));
+        assert!(!is_long_lived("wrangler publish"));
+    }
+
+    #[test]
+    fn test_long_lived_mise() {
+        assert!(is_long_lived("mise run dev"));
+        assert!(is_long_lived("mise run start"));
+        assert!(is_long_lived("mise run serve"));
+        assert!(is_long_lived("mise run watch"));
+        // build is not long-lived
+        assert!(!is_long_lived("mise run build"));
+        assert!(!is_long_lived("mise run test"));
+    }
+
+    #[test]
+    fn test_long_lived_deno_run() {
+        assert!(is_long_lived("deno run server.ts"));
+        assert!(is_long_lived("deno run --allow-net server.ts"));
+    }
+
+    #[test]
+    fn test_long_lived_npm_exec() {
+        assert!(is_long_lived("npm exec vite"));
+        assert!(is_long_lived("npm exec vite --port 3000"));
+        // non-long-lived through npm exec
+        assert!(!is_long_lived("npm exec eslint ."));
+    }
+
+    #[test]
+    fn test_long_lived_package_runner_wrangler() {
+        assert!(is_long_lived("npx wrangler dev"));
+        assert!(is_long_lived("bunx wrangler dev"));
     }
 
     #[test]

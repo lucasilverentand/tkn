@@ -1,0 +1,11 @@
+match = "biome check"
+
+[optimize]
+truncate = "bottom"
+max_lines = 150
+strip = [
+    "^\\s*$",
+    "^Checked \\d+ files?",
+    "^Found \\d+ errors?\\.$",
+    "^\\[\\*\\] \\d+ fixable with",
+]

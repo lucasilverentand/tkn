@@ -1,0 +1,10 @@
+match = "deno test"
+
+[optimize]
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^running \\d+ tests?",
+    "^test .+ \\.\\.\\. ok",
+]
