@@ -311,7 +311,6 @@ mod tests {
         let config = load_tool_config("cargo build --release").unwrap();
         assert_eq!(config.match_pattern, "cargo build");
         assert!(!config.optimize.keep.is_empty());
-        assert!(!config.optimize.keep.is_empty());
     }
 
     #[test]

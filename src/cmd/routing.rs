@@ -1,5 +1,5 @@
 /// Package runner wrappers that should be stripped before matching.
-const PACKAGE_RUNNERS: &[&str] = &["npx", "pnpx", "bunx", "npm exec"];
+const PACKAGE_RUNNERS: &[&str] = &["npx", "pnpx", "bunx", "npm exec", "yarn exec", "pnpm exec"];
 
 /// Patterns that indicate a long-running / streaming process.
 const LONG_LIVED_PREFIXES: &[&str] = &[
@@ -66,14 +66,28 @@ const LONG_LIVED_PREFIXES: &[&str] = &[
     "hugo server",
     "hugo serve",
     "jekyll serve",
-    // Docker / k8s
+    // Container orchestration
     "docker compose up",
     "docker-compose up",
+    "docker run",
     "docker logs -f",
     "docker logs --follow",
     "kubectl logs -f",
     "kubectl logs --follow",
     "kubectl port-forward",
+    "k9s",
+    "stern",
+    "skaffold dev",
+    "tilt up",
+    // Java / JVM
+    "gradle app:run",
+    "mvn spring-boot:run",
+    "sbt run",
+    // Task runners
+    "just dev",
+    "just serve",
+    "just start",
+    "just watch",
     // System
     "tail -f",
     "tail --follow",
@@ -226,6 +240,12 @@ mod tests {
     }
 
     #[test]
+    fn test_logical_or() {
+        assert!(has_complex_syntax("ls /foo || echo fail"));
+        assert!(has_complex_syntax("test -f file || exit 1"));
+    }
+
+    #[test]
     fn test_complex_real_world() {
         assert!(has_complex_syntax(
             "gh issue list --state all --limit 500 --json number | jq -r '.[].number' | xargs -I {} gh issue delete {} --yes 2>&1 | tail -5"
@@ -341,5 +361,41 @@ mod tests {
         assert!(!is_long_lived("ls -la"));
         assert!(!is_long_lived("dotnet test"));
         assert!(!is_long_lived("python -m pytest"));
+    }
+
+    #[test]
+    fn test_long_lived_docker_run() {
+        assert!(is_long_lived("docker run -it ubuntu bash"));
+        assert!(is_long_lived("docker run --rm -p 8080:80 nginx"));
+    }
+
+    #[test]
+    fn test_long_lived_k8s_tools() {
+        assert!(is_long_lived("k9s"));
+        assert!(is_long_lived("stern my-pod"));
+        assert!(is_long_lived("skaffold dev"));
+        assert!(is_long_lived("tilt up"));
+    }
+
+    #[test]
+    fn test_long_lived_jvm() {
+        assert!(is_long_lived("gradle app:run"));
+        assert!(is_long_lived("mvn spring-boot:run"));
+        assert!(is_long_lived("sbt run"));
+    }
+
+    #[test]
+    fn test_long_lived_just() {
+        assert!(is_long_lived("just dev"));
+        assert!(is_long_lived("just serve"));
+        assert!(!is_long_lived("just build"));
+        assert!(!is_long_lived("just test"));
+    }
+
+    #[test]
+    fn test_package_runners_yarn_pnpm_exec() {
+        assert!(is_long_lived("yarn exec vite"));
+        assert!(is_long_lived("pnpm exec next dev"));
+        assert!(!is_long_lived("yarn exec eslint ."));
     }
 }
