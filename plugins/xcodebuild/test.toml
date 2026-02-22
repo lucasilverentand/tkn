@@ -2,6 +2,7 @@ match = "xcodebuild test"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 keep = [
     # Test lifecycle
     "^[◇✔✘☐] (Test|Suite|Test run) ",

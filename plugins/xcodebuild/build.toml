@@ -2,6 +2,7 @@ match = "xcodebuild build"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 keep = [
     "(?i)error[:\\[]",
     "(?i)warning[:\\[]",

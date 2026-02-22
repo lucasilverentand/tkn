@@ -2,6 +2,7 @@ match = "ruff check"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "^All checks passed!$",
     "^Found \\d+ errors?\\.$",       # redundant when individual errors shown

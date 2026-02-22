@@ -2,6 +2,7 @@ match = "git add"
 
 [optimize]
 truncate = "bottom"
+max_lines = 100
 strip = [
     "^warning: LF will be replaced",
     "^warning: CRLF will be replaced",

@@ -2,6 +2,7 @@ match = "eslint"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "^\\s*$",
     "^✖ \\d+ problems?",           # summary line (redundant with individual errors)

@@ -2,6 +2,7 @@ match = "pip install"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "^\\s*Collecting ",
     "^\\s*Downloading ",

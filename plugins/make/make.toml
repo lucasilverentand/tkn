@@ -2,6 +2,7 @@ match = "make"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 strip = [
     "^make\\[\\d+\\]: Entering directory",
     "^make\\[\\d+\\]: Leaving directory",

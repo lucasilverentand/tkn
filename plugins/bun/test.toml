@@ -2,6 +2,7 @@ match = "bun test"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 strip = [
     # Debug/trace log lines from test output
     "^\\[\\S+\\] conversation=\\S+ .+ (New message|Response compl|Error:)",

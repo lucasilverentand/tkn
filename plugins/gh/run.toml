@@ -1,6 +1,7 @@
 match = "gh run"
 
 [optimize]
+max_lines = 150
 strip = [
     "^—+$",
     "^https://github\\.com/",

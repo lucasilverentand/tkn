@@ -1,6 +1,7 @@
 match = "gh pr"
 
 [optimize]
+max_lines = 150
 strip = [
     "^—+$",
     "^View this pull request on GitHub:",

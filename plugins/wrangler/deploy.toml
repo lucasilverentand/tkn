@@ -2,6 +2,7 @@ match = "wrangler deploy"
 
 [optimize]
 truncate = "bottom"
+max_lines = 100
 strip = [
     "^\\s*$",
     "^Uploading\\.\\.\\.",

@@ -2,6 +2,7 @@ match = "go vet"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 keep = [
     "\\.go:\\d+:",           # file:line:col diagnostics
     "(?i)error",

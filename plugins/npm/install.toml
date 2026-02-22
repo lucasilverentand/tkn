@@ -2,6 +2,7 @@ match = "npm install"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "^npm warn ",
     "^npm WARN ",

@@ -2,6 +2,7 @@ match = "tsc"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "^\\s*$",
     "^\\s+Overload \\d+ of \\d+,",           # duplicate overload error noise

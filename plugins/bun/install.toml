@@ -2,6 +2,7 @@ match = "bun install"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     # Package resolution/download progress
     "^\\$ bun install",

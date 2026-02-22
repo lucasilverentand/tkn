@@ -2,6 +2,7 @@ match = "bun run"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 strip = [
     # Turbo boilerplate
     "^• Packages in scope:",

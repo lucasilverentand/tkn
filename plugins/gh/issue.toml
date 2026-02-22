@@ -1,6 +1,7 @@
 match = "gh issue"
 
 [optimize]
+max_lines = 150
 strip = [
     "^—+$",
     "^View this issue on GitHub:",

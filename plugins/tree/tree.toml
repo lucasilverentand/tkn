@@ -6,6 +6,7 @@ savings_factor = 10.0
 
 [optimize]
 truncate = "top"
+max_lines = 150
 strip = [
     "\\d+ directories, \\d+ files",
 ]

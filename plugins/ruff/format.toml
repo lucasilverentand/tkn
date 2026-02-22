@@ -2,6 +2,7 @@ match = "ruff format"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "\\d+ files? left unchanged",
     "^All checks passed",

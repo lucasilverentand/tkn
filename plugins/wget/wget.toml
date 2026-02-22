@@ -2,6 +2,7 @@ match = "wget"
 
 [optimize]
 truncate = "bottom"
+max_lines = 100
 strip = [
     "^\\d+K [\\. ]+\\d+%",         # progress bar lines
     "^Resolving ",

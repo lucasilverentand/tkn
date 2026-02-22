@@ -6,6 +6,7 @@ savings_factor = 2.0
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 strip = [
     "^=+ test session starts =+$",
     "^platform ",

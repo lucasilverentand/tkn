@@ -1,6 +1,7 @@
 match = "gh api"
 
 [optimize]
+max_lines = 150
 strip = [
     "\"\\w+_url\":\\s",
     "\"node_id\":\\s",

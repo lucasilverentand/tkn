@@ -2,6 +2,7 @@ match = "cargo clippy"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 strip = [
     "^\\s*Compiling\\s",
     "^\\s*Checking\\s",

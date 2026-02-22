@@ -2,6 +2,7 @@ match = "go test"
 
 [optimize]
 truncate = "bottom"
+max_lines = 200
 strip = [
     "^--- PASS:",
     "^ok\\s+\\S+\\s+\\d",       # ok package 0.123s (passing package summary)

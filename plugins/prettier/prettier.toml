@@ -2,6 +2,7 @@ match = "prettier"
 
 [optimize]
 truncate = "bottom"
+max_lines = 150
 strip = [
     "^Checking formatting\\.\\.\\.",
     "^All matched files use Prettier code style",
