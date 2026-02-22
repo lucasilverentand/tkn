@@ -91,6 +91,10 @@ const PREFIX_COMMANDS: &[(&str, &[&str], usize)] = &[
     // Script captures output to a file, then runs a command
     // Pattern: script [flags] <logfile> <command...>
     ("script", &["-t", "-T"], 1),
+    // direnv exec <dir> <command...>
+    ("direnv", &[], 2),
+    // timeout [flags] <duration> <command...>
+    ("timeout", &["--signal", "-s", "--kill-after", "-k"], 1),
 ];
 
 /// Normalize a full command string into a tool name.
@@ -426,5 +430,35 @@ mod tests {
         let p = HashSet::new();
         assert_eq!(normalize_tool("git diff src/main.rs", &p), "git diff");
         assert_eq!(normalize_tool("ls -la", &p), "ls");
+    }
+
+    #[test]
+    fn test_normalize_direnv_wrapper() {
+        let p = default_patterns();
+        assert_eq!(
+            normalize_tool("direnv exec /project git diff", &p),
+            "git diff"
+        );
+        assert_eq!(
+            normalize_tool("direnv exec . cargo build", &p),
+            "cargo build"
+        );
+    }
+
+    #[test]
+    fn test_normalize_timeout_wrapper() {
+        let p = default_patterns();
+        assert_eq!(
+            normalize_tool("timeout 30 cargo test", &p),
+            "cargo test"
+        );
+        assert_eq!(
+            normalize_tool("timeout --signal KILL 60 git status", &p),
+            "git status"
+        );
+        assert_eq!(
+            normalize_tool("timeout -k 10 30 cargo build", &p),
+            "cargo build"
+        );
     }
 }
