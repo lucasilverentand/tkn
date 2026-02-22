@@ -56,19 +56,28 @@ pub fn install() {
     let settings_path = claude_dir.join("settings.json");
     let mut settings = read_settings(&settings_path);
 
-    let hooks = settings
-        .as_object_mut()
-        .unwrap()
+    let Some(settings_obj) = settings.as_object_mut() else {
+        eprintln!("tkn: settings.json is not a JSON object");
+        return;
+    };
+
+    let hooks = settings_obj
         .entry("hooks")
         .or_insert_with(|| serde_json::json!({}));
 
-    let pre_tool_use = hooks
-        .as_object_mut()
-        .unwrap()
+    let Some(hooks_obj) = hooks.as_object_mut() else {
+        eprintln!("tkn: settings.json 'hooks' is not an object");
+        return;
+    };
+
+    let pre_tool_use = hooks_obj
         .entry("PreToolUse")
         .or_insert_with(|| serde_json::json!([]));
 
-    let arr = pre_tool_use.as_array_mut().unwrap();
+    let Some(arr) = pre_tool_use.as_array_mut() else {
+        eprintln!("tkn: settings.json 'PreToolUse' is not an array");
+        return;
+    };
     for matcher in ["Bash", "Zsh"] {
         if !arr
             .iter()
@@ -178,7 +187,7 @@ fn read_settings(path: &PathBuf) -> serde_json::Value {
 
 fn write_settings(path: &PathBuf, value: &serde_json::Value) -> std::io::Result<()> {
     let json = serde_json::to_string_pretty(value)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(std::io::Error::other)?;
     fs::write(path, json)
 }
 

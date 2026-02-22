@@ -1,4 +1,10 @@
+use std::sync::LazyLock;
+
 use regex::Regex;
+
+static ANSI_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07|\x1b[^\[\]][^\x1b]?").unwrap()
+});
 
 /// Clean terminal output for display.
 ///
@@ -6,8 +12,7 @@ use regex::Regex;
 /// Unless `raw` is true, also trims trailing whitespace per line and collapses
 /// 3+ consecutive blank lines into one.
 pub fn strip_ansi(input: &str, raw: bool) -> String {
-    let ansi_re =
-        Regex::new(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07|\x1b[^\[\]][^\x1b]?").unwrap();
+    let ansi_re = &*ANSI_RE;
 
     let stripped = ansi_re.replace_all(input, "");
 
@@ -38,9 +43,7 @@ pub fn strip_ansi(input: &str, raw: bool) -> String {
                 result.push('\n');
             }
         } else {
-            if i > 0 && blank_count == 0 {
-                result.push('\n');
-            } else if i > 0 && blank_count > 0 {
+            if i > 0 {
                 result.push('\n');
             }
             blank_count = 0;
