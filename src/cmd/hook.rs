@@ -43,12 +43,12 @@ pub fn run() {
     print!("{}", serde_json::to_string(&response).unwrap());
 }
 
-pub fn install() {
+pub fn install() -> i32 {
     let claude_dir = match dirs::home_dir() {
         Some(h) => h.join(".claude"),
         None => {
             eprintln!("tkn: cannot determine home directory");
-            return;
+            return 1;
         }
     };
 
@@ -58,7 +58,7 @@ pub fn install() {
 
     let Some(settings_obj) = settings.as_object_mut() else {
         eprintln!("tkn: settings.json is not a JSON object");
-        return;
+        return 1;
     };
 
     let hooks = settings_obj
@@ -67,7 +67,7 @@ pub fn install() {
 
     let Some(hooks_obj) = hooks.as_object_mut() else {
         eprintln!("tkn: settings.json 'hooks' is not an object");
-        return;
+        return 1;
     };
 
     let pre_tool_use = hooks_obj
@@ -76,7 +76,7 @@ pub fn install() {
 
     let Some(arr) = pre_tool_use.as_array_mut() else {
         eprintln!("tkn: settings.json 'PreToolUse' is not an array");
-        return;
+        return 1;
     };
     for matcher in ["Bash", "Zsh"] {
         if !arr
@@ -89,7 +89,7 @@ pub fn install() {
 
     if let Err(e) = write_settings(&settings_path, &settings) {
         eprintln!("tkn: failed to update settings: {e}");
-        return;
+        return 1;
     }
 
     // Clean up legacy hook script if present
@@ -100,14 +100,15 @@ pub fn install() {
 
     println!("tkn hook installed successfully.");
     println!("  Settings: {}", settings_path.display());
+    0
 }
 
-pub fn uninstall() {
+pub fn uninstall() -> i32 {
     let claude_dir = match dirs::home_dir() {
         Some(h) => h.join(".claude"),
         None => {
             eprintln!("tkn: cannot determine home directory");
-            return;
+            return 1;
         }
     };
 
@@ -132,11 +133,12 @@ pub fn uninstall() {
 
         if let Err(e) = write_settings(&settings_path, &settings) {
             eprintln!("tkn: failed to update settings: {e}");
-            return;
+            return 1;
         }
     }
 
     println!("tkn hook uninstalled successfully.");
+    0
 }
 
 /// Check if a hook entry is a tkn hook (matches both legacy shell script and new `tkn hook run`)

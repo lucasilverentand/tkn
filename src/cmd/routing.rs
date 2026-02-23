@@ -108,8 +108,43 @@ const LONG_LIVED_EXACT: &[&str] = &[
     "serve",
 ];
 
+/// Commands that are long-lived only when invoked bare (no arguments at all).
+/// REPLs become short-lived script runners when given args (e.g. `python -m pytest`).
+const LONG_LIVED_BARE: &[&str] = &[
+    // REPLs / interactive interpreters
+    "python",
+    "python3",
+    "node",
+    "irb",
+    "pry",
+    "ipython",
+    "iex",
+    "ghci",
+    "lua",
+    "erl",
+    // Editors (should never be captured)
+    "vim",
+    "nvim",
+    "vi",
+    "nano",
+    "emacs",
+    "micro",
+    "helix",
+];
+
 /// Flags that indicate a long-running / streaming mode.
-const LONG_LIVED_FLAGS: &[&str] = &["--watch", "--serve", "--live-reload", "--hot"];
+const LONG_LIVED_FLAGS: &[&str] = &["--watch", "--serve", "--live-reload", "--hot", "--interactive"];
+
+/// Command + flag combinations that indicate interactive use.
+const INTERACTIVE_PATTERNS: &[(&str, &str)] = &[
+    ("git add", "-i"),
+    ("git add", "-p"),
+    ("git add", "--patch"),
+    ("git stash", "-p"),
+    ("git stash", "--patch"),
+    ("git checkout", "-p"),
+    ("git checkout", "--patch"),
+];
 
 /// Strip package runner prefix (npx, pnpx, bunx) if present.
 fn strip_package_runner(cmd: &str) -> &str {
@@ -137,8 +172,18 @@ pub fn is_long_lived(command: &str) -> bool {
             return true;
         }
     }
+    for bare in LONG_LIVED_BARE {
+        if effective == *bare {
+            return true;
+        }
+    }
     for flag in LONG_LIVED_FLAGS {
         if cmd.contains(&format!(" {flag}")) {
+            return true;
+        }
+    }
+    for &(prefix, flag) in INTERACTIVE_PATTERNS {
+        if effective.starts_with(prefix) && cmd.contains(&format!(" {flag}")) {
             return true;
         }
     }
@@ -397,5 +442,54 @@ mod tests {
         assert!(is_long_lived("yarn exec vite"));
         assert!(is_long_lived("pnpm exec next dev"));
         assert!(!is_long_lived("yarn exec eslint ."));
+    }
+
+    #[test]
+    fn test_long_lived_repls() {
+        assert!(is_long_lived("python"));
+        assert!(is_long_lived("python3"));
+        assert!(is_long_lived("node"));
+        assert!(is_long_lived("irb"));
+        assert!(is_long_lived("ipython"));
+        assert!(is_long_lived("iex"));
+        assert!(is_long_lived("ghci"));
+        assert!(is_long_lived("lua"));
+        assert!(is_long_lived("erl"));
+        // With args, REPLs become script runners — not long-lived
+        assert!(!is_long_lived("python script.py"));
+        assert!(!is_long_lived("python -m pytest"));
+        assert!(!is_long_lived("python3 -c 'print(1)'"));
+        assert!(!is_long_lived("node -e 'console.log(1)'"));
+        assert!(!is_long_lived("lua script.lua"));
+    }
+
+    #[test]
+    fn test_long_lived_editors() {
+        assert!(is_long_lived("vim"));
+        assert!(is_long_lived("nvim"));
+        assert!(is_long_lived("vi"));
+        assert!(is_long_lived("nano"));
+        assert!(is_long_lived("emacs"));
+        assert!(is_long_lived("micro"));
+        assert!(is_long_lived("helix"));
+        // Editors with args are still bare-only (vim file.txt should not match)
+        // because LONG_LIVED_BARE only matches exact
+        assert!(!is_long_lived("vim file.txt"));
+    }
+
+    #[test]
+    fn test_interactive_git_patterns() {
+        assert!(is_long_lived("git add -i"));
+        assert!(is_long_lived("git add -p"));
+        assert!(is_long_lived("git add --patch"));
+        assert!(is_long_lived("git add -p src/main.rs"));
+        assert!(is_long_lived("git stash -p"));
+        assert!(is_long_lived("git stash --patch"));
+        assert!(is_long_lived("git checkout -p"));
+        assert!(is_long_lived("git checkout --patch"));
+        // Regular git add is not interactive
+        assert!(!is_long_lived("git add ."));
+        assert!(!is_long_lived("git stash"));
+        assert!(!is_long_lived("git checkout main"));
     }
 }

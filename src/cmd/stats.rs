@@ -4,32 +4,30 @@ use crate::storage::StorageManager;
 use crate::tool_config;
 use crate::types::ToolStats;
 
-pub fn run(reset: Option<&str>, reset_failures: Option<&str>) {
+pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
     let storage = StorageManager::new();
 
     if let Some(tool) = reset {
-        match storage.reset_tool_stats(tool) {
-            Ok(true) => println!("Reset stats for \"{tool}\"."),
-            Ok(false) => eprintln!("tkn: no stats found for \"{tool}\""),
-            Err(e) => eprintln!("tkn: failed to reset stats: {e}"),
-        }
-        return;
+        return match storage.reset_tool_stats(tool) {
+            Ok(true) => { println!("Reset stats for \"{tool}\"."); 0 }
+            Ok(false) => { eprintln!("tkn: no stats found for \"{tool}\""); 1 }
+            Err(e) => { eprintln!("tkn: failed to reset stats: {e}"); 1 }
+        };
     }
 
     if let Some(tool) = reset_failures {
-        match storage.reset_tool_failures(tool) {
-            Ok(true) => println!("Reset failures for \"{tool}\"."),
-            Ok(false) => eprintln!("tkn: no stats found for \"{tool}\""),
-            Err(e) => eprintln!("tkn: failed to reset failures: {e}"),
-        }
-        return;
+        return match storage.reset_tool_failures(tool) {
+            Ok(true) => { println!("Reset failures for \"{tool}\"."); 0 }
+            Ok(false) => { eprintln!("tkn: no stats found for \"{tool}\""); 1 }
+            Err(e) => { eprintln!("tkn: failed to reset failures: {e}"); 1 }
+        };
     }
 
     let analytics = storage.read_analytics();
 
     if analytics.total_commands == 0 {
         println!("No commands tracked yet.");
-        return;
+        return 0;
     }
 
     println!("tkn analytics");
@@ -152,6 +150,8 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) {
             }
         }
     }
+
+    0
 }
 
 fn print_tool_line(

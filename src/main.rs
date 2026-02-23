@@ -134,48 +134,28 @@ fn main() {
         Commands::Exec { args } => cmd::exec::run(&args),
         Commands::Pass { args } => cmd::pass::run(&args),
         Commands::Stats { reset, reset_failures } => {
-            cmd::stats::run(reset.as_deref(), reset_failures.as_deref());
-            0
+            cmd::stats::run(reset.as_deref(), reset_failures.as_deref())
         }
         Commands::Log { id, reason, lines } => {
-            cmd::logs::run(id.as_deref(), reason.as_deref(), lines.as_deref());
-            0
+            cmd::logs::run(id.as_deref(), reason.as_deref(), lines.as_deref())
         }
-        Commands::Hook { action } => {
-            match action {
-                HookAction::Install => cmd::hook::install(),
-                HookAction::Uninstall => cmd::hook::uninstall(),
-                HookAction::Run { .. } => cmd::hook::run(),
-            }
-            0
-        }
-        Commands::Clean { logs, stats } => {
-            cmd::clean::run(logs, stats);
-            0
-        }
-        Commands::Analyze { action } => {
-            match action {
-                AnalyzeAction::Scan => cmd::analyze::scan(),
-                AnalyzeAction::Report { args } => cmd::analyze::report(&args),
-            }
-            0
-        }
-        Commands::Reasons => {
-            cmd::reasons::run();
-            0
-        }
-        Commands::Replay { id } => {
-            cmd::replay::run(&id);
-            0
-        }
-        Commands::Plugin { action } => {
-            match action {
-                PluginAction::Install { url } => cmd::plugin::install(url.as_deref()),
-                PluginAction::List => cmd::plugin::list(),
-                PluginAction::Remove { name } => cmd::plugin::remove(&name),
-            }
-            0
-        }
+        Commands::Hook { action } => match action {
+            HookAction::Install => cmd::hook::install(),
+            HookAction::Uninstall => cmd::hook::uninstall(),
+            HookAction::Run { .. } => { cmd::hook::run(); 0 }
+        },
+        Commands::Clean { logs, stats } => cmd::clean::run(logs, stats),
+        Commands::Analyze { action } => match action {
+            AnalyzeAction::Scan => cmd::analyze::scan(),
+            AnalyzeAction::Report { args } => cmd::analyze::report(&args),
+        },
+        Commands::Reasons => { cmd::reasons::run(); 0 }
+        Commands::Replay { id } => cmd::replay::run(&id),
+        Commands::Plugin { action } => match action {
+            PluginAction::Install { url } => cmd::plugin::install(url.as_deref()),
+            PluginAction::List => { cmd::plugin::list(); 0 }
+            PluginAction::Remove { name } => cmd::plugin::remove(&name),
+        },
     };
 
     std::process::exit(exit_code);

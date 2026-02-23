@@ -6,13 +6,13 @@ use crate::tool_config;
 use crate::types::normalize_tool;
 use crate::shell;
 
-pub fn scan() {
+pub fn scan() -> i32 {
     let storage = StorageManager::new();
     let entries = storage.list_log_entries().unwrap_or_default();
 
     if entries.is_empty() {
         println!("No log entries found. Run some commands through tkn first.");
-        return;
+        return 0;
     }
 
     let patterns = tool_config::collect_patterns();
@@ -220,6 +220,8 @@ pub fn scan() {
             println!("   Run: {}", action);
         }
     }
+
+    0
 }
 
 #[derive(Default)]
@@ -244,11 +246,11 @@ struct ScoredTool {
     avg_duration_ms: f64,
 }
 
-pub fn report(args: &[String]) {
+pub fn report(args: &[String]) -> i32 {
     if args.is_empty() {
         eprintln!("Usage: tkn analyze report -- <command>");
         eprintln!("Example: tkn analyze report -- git branch");
-        std::process::exit(1);
+        return 1;
     }
 
     let command = shell::args_to_shell_command(args);
@@ -266,7 +268,7 @@ pub fn report(args: &[String]) {
         eprintln!("No log entries found for tool: {tool_name}");
         eprintln!("Run some commands through tkn first:");
         eprintln!("  tkn exec -- {command}");
-        std::process::exit(1);
+        return 1;
     }
 
     // Read all raw outputs
@@ -279,7 +281,7 @@ pub fn report(args: &[String]) {
 
     if outputs.is_empty() {
         eprintln!("Could not read any log files for tool: {tool_name}");
-        std::process::exit(1);
+        return 1;
     }
 
     let analysis = analyze(&outputs);
@@ -603,6 +605,8 @@ pub fn report(args: &[String]) {
         }
         None => println!("  (no plugin config found)"),
     }
+
+    0
 }
 
 /// Read log_reasons.jsonl and return reasons matching the given tool name.

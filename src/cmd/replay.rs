@@ -2,14 +2,14 @@ use crate::optimizer;
 use crate::storage::StorageManager;
 use crate::tool_config;
 
-pub fn run(ref_id: &str) {
+pub fn run(ref_id: &str) -> i32 {
     let storage = StorageManager::new();
 
     let entry = match storage.read_log_entry(ref_id) {
         Ok(e) => e,
         Err(e) => {
             eprintln!("tkn: failed to read metadata for {ref_id}: {e}");
-            return;
+            return 1;
         }
     };
 
@@ -17,7 +17,7 @@ pub fn run(ref_id: &str) {
         Ok(r) => r,
         Err(e) => {
             eprintln!("tkn: failed to read raw log for {ref_id}: {e}");
-            return;
+            return 1;
         }
     };
 
@@ -67,4 +67,6 @@ pub fn run(ref_id: &str) {
     if result.was_truncated {
         println!("(output was truncated)");
     }
+
+    0
 }

@@ -10,26 +10,29 @@ use crate::types::{PluginEntry, PluginManifest, PluginSource};
 
 const DEFAULT_REPO: &str = "https://github.com/lucasilverentand/tkn";
 
-pub fn install(url: Option<&str>) {
+pub fn install(url: Option<&str>) -> i32 {
     let storage = StorageManager::new();
     if let Err(e) = storage.init() {
         eprintln!("error: failed to initialize storage: {e}");
-        return;
+        return 1;
     }
 
     let mut manifest = storage.read_plugin_manifest();
 
-    match url {
+    let result = match url {
         None => install_builtins(&storage, &mut manifest),
         Some(u) => install_from_git(u, &storage, &mut manifest),
-    }
+    };
 
     if let Err(e) = storage.write_plugin_manifest(&manifest) {
         eprintln!("error: failed to write plugin manifest: {e}");
+        return 1;
     }
+
+    result
 }
 
-fn install_builtins(storage: &StorageManager, manifest: &mut PluginManifest) {
+fn install_builtins(storage: &StorageManager, manifest: &mut PluginManifest) -> i32 {
     let tools_dir = storage.tools_dir();
     let mut installed = 0;
 
@@ -59,9 +62,10 @@ fn install_builtins(storage: &StorageManager, manifest: &mut PluginManifest) {
     }
 
     println!("{installed} plugin(s) installed to {}", tools_dir.display());
+    0
 }
 
-fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginManifest) {
+fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginManifest) -> i32 {
     let url = if url == "default" { DEFAULT_REPO } else { url };
 
     let tmp_dir = std::env::temp_dir().join(format!("tkn-plugin-{}", uuid::Uuid::new_v4()));
@@ -75,11 +79,11 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
         Ok(s) if s.success() => {}
         Ok(s) => {
             eprintln!("error: git clone failed with exit code {}", s.code().unwrap_or(-1));
-            return;
+            return 1;
         }
         Err(e) => {
             eprintln!("error: failed to run git: {e}");
-            return;
+            return 1;
         }
     }
 
@@ -87,7 +91,7 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
     if !plugins_dir.exists() {
         eprintln!("error: no plugins/ directory found in repository");
         let _ = fs::remove_dir_all(&tmp_dir);
-        return;
+        return 1;
     }
 
     let tools_dir = storage.tools_dir();
@@ -163,6 +167,7 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
 
     let _ = fs::remove_dir_all(&tmp_dir);
     println!("{installed} plugin(s) installed from {url}");
+    0
 }
 
 pub fn list() {
@@ -230,7 +235,7 @@ pub fn list() {
     }
 }
 
-pub fn remove(name: &str) {
+pub fn remove(name: &str) -> i32 {
     let storage = StorageManager::new();
     let tools_dir = storage.tools_dir();
     let builtins = builtin_plugins();
@@ -268,7 +273,7 @@ pub fn remove(name: &str) {
         } else {
             println!("{removed} plugin(s) removed from bundle {name}");
         }
-        return;
+        return 0;
     }
 
     // Single plugin removal
@@ -276,15 +281,16 @@ pub fn remove(name: &str) {
     if !path.exists() {
         if builtins.iter().any(|(_, n, _)| *n == name) {
             println!("{name} is a built-in plugin (not installed to disk, nothing to remove)");
+            return 0;
         } else {
             eprintln!("error: plugin '{name}' not found");
+            return 1;
         }
-        return;
     }
 
     if let Err(e) = fs::remove_file(&path) {
         eprintln!("error: failed to remove {name}: {e}");
-        return;
+        return 1;
     }
 
     // Remove from manifest
@@ -295,4 +301,5 @@ pub fn remove(name: &str) {
     }
 
     println!("removed: {name}");
+    0
 }

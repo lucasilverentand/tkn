@@ -1,7 +1,7 @@
 use crate::storage::StorageManager;
 use crate::tool_config;
 
-pub fn run(id: Option<&str>, reason: Option<&str>, lines: Option<&str>) {
+pub fn run(id: Option<&str>, reason: Option<&str>, lines: Option<&str>) -> i32 {
     let storage = StorageManager::new();
 
     match id {
@@ -11,10 +11,10 @@ pub fn run(id: Option<&str>, reason: Option<&str>, lines: Option<&str>) {
                 _ => {
                     eprintln!("tkn: a reason is required when viewing a log");
                     eprintln!("usage: tkn log <ID> \"<reason>\"");
-                    return;
+                    return 1;
                 }
             };
-            show_log(&storage, ref_id, reason, lines);
+            show_log(&storage, ref_id, reason, lines)
         }
         None => list_logs(&storage),
     }
@@ -42,7 +42,7 @@ fn parse_line_spec(spec: &str) -> Result<(usize, Option<usize>), String> {
     }
 }
 
-fn show_log(storage: &StorageManager, ref_id: &str, reason: &str, lines: Option<&str>) {
+fn show_log(storage: &StorageManager, ref_id: &str, reason: &str, lines: Option<&str>) -> i32 {
     match storage.read_log_entry(ref_id) {
         Ok(entry) => {
             // Track that the full log was read (optimizer quality signal)
@@ -58,6 +58,7 @@ fn show_log(storage: &StorageManager, ref_id: &str, reason: &str, lines: Option<
         }
         Err(e) => {
             eprintln!("tkn: failed to read metadata for {ref_id}: {e}");
+            return 1;
         }
     }
 
@@ -72,21 +73,24 @@ fn show_log(storage: &StorageManager, ref_id: &str, reason: &str, lines: Option<
                         for line in &all_lines[start..end] {
                             println!("{line}");
                         }
+                        0
                     }
-                    Err(e) => eprintln!("tkn: {e}"),
+                    Err(e) => { eprintln!("tkn: {e}"); 1 }
                 }
             } else {
                 print!("{content}");
+                0
             }
         }
-        Err(e) => eprintln!("tkn: failed to read log for {ref_id}: {e}"),
+        Err(e) => { eprintln!("tkn: failed to read log for {ref_id}: {e}"); 1 }
     }
 }
 
-fn list_logs(storage: &StorageManager) {
+fn list_logs(storage: &StorageManager) -> i32 {
     match storage.list_log_entries() {
         Ok(entries) if entries.is_empty() => {
             println!("No logs found.");
+            0
         }
         Ok(entries) => {
             println!(
@@ -117,8 +121,9 @@ fn list_logs(storage: &StorageManager) {
                     cmd
                 );
             }
+            0
         }
-        Err(e) => eprintln!("tkn: failed to list logs: {e}"),
+        Err(e) => { eprintln!("tkn: failed to list logs: {e}"); 1 }
     }
 }
 
