@@ -163,6 +163,15 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         // misc
         ("wget", "wget", include_str!("../plugins/wget/wget.toml")),
         ("make", "make", include_str!("../plugins/make/make.toml")),
+        // rg / wc / nl
+        ("rg", "rg", include_str!("../plugins/rg/rg.toml")),
+        ("wc", "wc", include_str!("../plugins/wc/wc.toml")),
+        ("nl", "nl", include_str!("../plugins/nl/nl.toml")),
+        // file viewing
+        ("cat", "cat", include_str!("../plugins/cat/cat.toml")),
+        ("sed", "sed", include_str!("../plugins/sed/sed.toml")),
+        ("head", "head", include_str!("../plugins/head/head.toml")),
+        ("tail", "tail", include_str!("../plugins/tail/tail.toml")),
     ]
 }
 
@@ -342,7 +351,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 69);
+        assert_eq!(plugins.len(), 76);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));

@@ -1,0 +1,19 @@
+match = "rg"
+
+[transform]
+add = [
+    "--no-heading",
+    "--color=never",
+]
+
+[optimize]
+truncate = "top"
+strip = [
+    "^Binary file .* matches$",
+]
+max_lines = 100
+
+# Shorten home directory paths
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

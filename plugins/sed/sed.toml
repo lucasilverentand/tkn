@@ -1,5 +1,5 @@
-match = "cat"
+match = "sed"
 
 [optimize]
 truncate = "bottom"
-max_lines = 300
+max_lines = 200

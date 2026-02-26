@@ -56,12 +56,20 @@ pub fn transform_command(command: &str, config: &ToolConfig) -> String {
 
     if !to_add.is_empty() {
         // Insert after the last existing flag to keep flags before positional args.
-        // Falls back to appending at end if no flags are present.
+        // When no flags exist, insert right after the command prefix (derived from
+        // the plugin match pattern) so that tools like macOS `ls` — which stop
+        // parsing options after the first non-flag argument — still see the flags.
         let insert_pos = parts
             .iter()
             .rposition(|p| p.starts_with('-'))
             .map(|i| i + 1)
-            .unwrap_or(parts.len());
+            .unwrap_or_else(|| {
+                // No flags present — insert after the command prefix.
+                // The match pattern tells us how many leading tokens are
+                // "the command" (e.g. "ls" = 1, "git status" = 2).
+                let prefix_len = shell_split(&config.match_pattern).len().max(1);
+                prefix_len.min(parts.len())
+            });
         for (i, flag) in to_add.into_iter().enumerate() {
             parts.insert(insert_pos + i, flag);
         }
@@ -111,8 +119,17 @@ mod tests {
         remove: Vec<&str>,
         replace: Vec<(&str, &str)>,
     ) -> ToolConfig {
+        make_config_with_match("test", add, remove, replace)
+    }
+
+    fn make_config_with_match(
+        match_pattern: &str,
+        add: Vec<&str>,
+        remove: Vec<&str>,
+        replace: Vec<(&str, &str)>,
+    ) -> ToolConfig {
         ToolConfig {
-            match_pattern: "test".into(),
+            match_pattern: match_pattern.into(),
             transform: TransformConfig {
                 add: add.into_iter().map(String::from).collect(),
                 remove: remove.into_iter().map(String::from).collect(),
@@ -125,17 +142,17 @@ mod tests {
 
     #[test]
     fn test_add_flag() {
-        let config = make_config(vec!["--no-color"], vec![], vec![]);
-        // No existing flags, so new flag appended at end
+        let config = make_config_with_match("git diff", vec!["--no-color"], vec![], vec![]);
+        // No existing flags — new flag inserted after command prefix, before positional arg
         assert_eq!(
             transform_command("git diff src/main.rs", &config),
-            "git diff src/main.rs --no-color"
+            "git diff --no-color src/main.rs"
         );
     }
 
     #[test]
     fn test_add_flag_already_present() {
-        let config = make_config(vec!["--no-color"], vec![], vec![]);
+        let config = make_config_with_match("git diff", vec!["--no-color"], vec![], vec![]);
         assert_eq!(
             transform_command("git diff --no-color src/main.rs", &config),
             "git diff --no-color src/main.rs"
@@ -144,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_remove_flag() {
-        let config = make_config(vec![], vec!["--color"], vec![]);
+        let config = make_config_with_match("git diff", vec![], vec!["--color"], vec![]);
         assert_eq!(
             transform_command("git diff --color src/main.rs", &config),
             "git diff src/main.rs"
@@ -153,7 +170,7 @@ mod tests {
 
     #[test]
     fn test_replace_flag() {
-        let config = make_config(vec![], vec![], vec![("--color=auto", "--color=never")]);
+        let config = make_config_with_match("git diff", vec![], vec![], vec![("--color=auto", "--color=never")]);
         assert_eq!(
             transform_command("git diff --color=auto src/main.rs", &config),
             "git diff --color=never src/main.rs"
@@ -162,7 +179,8 @@ mod tests {
 
     #[test]
     fn test_combined_remove_replace_add() {
-        let config = make_config(
+        let config = make_config_with_match(
+            "git diff",
             vec!["--no-color"],
             vec!["--verbose"],
             vec![("--color=auto", "--color=never")],
@@ -184,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_add_flag_with_alias_already_present() {
-        let config = make_config(vec!["--short|-s"], vec![], vec![]);
+        let config = make_config_with_match("git status", vec!["--short|-s"], vec![], vec![]);
         // -s is an alias for --short, so --short should not be added
         assert_eq!(
             transform_command("git status -s", &config),
@@ -194,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_add_flag_with_alias_canonical_present() {
-        let config = make_config(vec!["--short|-s"], vec![], vec![]);
+        let config = make_config_with_match("git status", vec!["--short|-s"], vec![], vec![]);
         assert_eq!(
             transform_command("git status --short", &config),
             "git status --short"
@@ -203,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_add_flag_with_alias_none_present() {
-        let config = make_config(vec!["--short|-s"], vec![], vec![]);
+        let config = make_config_with_match("git status", vec!["--short|-s"], vec![], vec![]);
         assert_eq!(
             transform_command("git status", &config),
             "git status --short"
@@ -219,7 +237,7 @@ mod tests {
     #[test]
     fn test_add_detects_combined_short_flags() {
         // "-1|-l" should not add -1 when -l is inside combined "-la"
-        let config = make_config(vec!["-1|-l"], vec![], vec![]);
+        let config = make_config_with_match("ls", vec!["-1|-l"], vec![], vec![]);
         assert_eq!(
             transform_command("ls -la /tmp", &config),
             "ls -la /tmp"
@@ -229,17 +247,17 @@ mod tests {
     #[test]
     fn test_add_combined_short_flag_not_present() {
         // "-1|-l" should add -1 when neither -1 nor -l is present
-        // No existing flags, so appended at end
-        let config = make_config(vec!["-1|-l"], vec![], vec![]);
+        // No existing flags — inserted after command prefix, before path arg
+        let config = make_config_with_match("ls", vec!["-1|-l"], vec![], vec![]);
         assert_eq!(
             transform_command("ls /tmp", &config),
-            "ls /tmp -1"
+            "ls -1 /tmp"
         );
     }
 
     #[test]
     fn test_add_inserts_before_positional_args() {
-        let config = make_config(vec!["-h"], vec![], vec![]);
+        let config = make_config_with_match("ls", vec!["-h"], vec![], vec![]);
         assert_eq!(
             transform_command("ls -la /tmp", &config),
             "ls -la -h /tmp"
@@ -249,7 +267,7 @@ mod tests {
     #[test]
     fn test_add_multiple_flags_after_last_flag() {
         // With existing flags, new flags inserted after last flag
-        let config = make_config(vec!["-1|-l", "-h"], vec![], vec![]);
+        let config = make_config_with_match("ls", vec!["-1|-l", "-h"], vec![], vec![]);
         assert_eq!(
             transform_command("ls -a /tmp", &config),
             "ls -a -1 -h /tmp"
@@ -258,10 +276,31 @@ mod tests {
 
     #[test]
     fn test_add_flag_no_positional_args() {
-        let config = make_config(vec!["-h"], vec![], vec![]);
+        let config = make_config_with_match("ls", vec!["-h"], vec![], vec![]);
         assert_eq!(
             transform_command("ls -la", &config),
             "ls -la -h"
+        );
+    }
+
+    #[test]
+    fn test_add_multiple_flags_no_existing_flags() {
+        // Reproduces the `ls plugins/` bug: flags must appear before path args
+        // even when the command has no existing flags.
+        let config = make_config_with_match("ls", vec!["-1|-l", "-h"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls plugins/", &config),
+            "ls -1 -h plugins/"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_command_only() {
+        // No positional args, no existing flags — flags appended at end
+        let config = make_config_with_match("ls", vec!["-1|-l", "-h"], vec![], vec![]);
+        assert_eq!(
+            transform_command("ls", &config),
+            "ls -1 -h"
         );
     }
 }

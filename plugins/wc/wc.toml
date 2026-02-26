@@ -1,0 +1,9 @@
+match = "wc"
+
+[optimize]
+max_lines = 50
+
+# Shorten home directory paths
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

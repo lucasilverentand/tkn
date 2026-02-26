@@ -1,5 +1,8 @@
 match = "grep"
 
+[transform]
+add = ["--color=never|--color|--color=auto|--color=always"]
+
 [optimize]
 truncate = "top"
 strip = [

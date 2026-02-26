@@ -8,5 +8,7 @@ savings_factor = 2.5
 strip = [
     "(?i)\\.DS_Store$",
     "(?i)Thumbs\\.db$",
+    "^\\s+\\(use \"git ",
+    "^\\s+\\(all conflicts fixed",
 ]
 max_lines = 100
