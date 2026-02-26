@@ -14,6 +14,7 @@ strip = [
     "^\\s*Downloading\\s",
     "^\\s*Downloaded\\s",
     "^running \\d+ tests?$",
+    "^\\s*Fresh\\s",
     "^\\s*Blocking waiting for",
     "^\\s*Waiting on\\s",
     "^\\s*warning:.*unused",

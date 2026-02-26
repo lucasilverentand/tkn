@@ -9,4 +9,5 @@ strip = [
     "\"avatar_url\":\\s",
     "\"site_admin\":\\s",
     "\"permissions\":\\s",
+    "\"type\":\\s*\"User\"",
 ]

@@ -1,5 +1,8 @@
 match = "git branch"
 
+[transform]
+add = ["--no-color|--color|--color=never|--color=always|--color=auto"]
+
 [optimize]
 truncate = "top"
 max_lines = 50

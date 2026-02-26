@@ -13,5 +13,7 @@ strip = [
     "^remote: Compressing objects:",
     "^remote: Total \\d+",
     "^Unpacking objects:",
+    "^Receiving objects:",
+    "^Resolving deltas:",
     "^From .+$",
 ]

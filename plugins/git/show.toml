@@ -1,5 +1,8 @@
 match = "git show"
 
+[transform]
+add = ["--no-color|--color|--color=never|--color=always|--color=auto"]
+
 [optimize]
 strip = [
     "^commit [a-f0-9]",

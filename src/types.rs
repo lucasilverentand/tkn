@@ -97,6 +97,65 @@ const PREFIX_COMMANDS: &[(&str, &[&str], usize)] = &[
     ("timeout", &["--signal", "-s", "--kill-after", "-k"], 1),
 ];
 
+/// Check whether a whitespace-split token looks like a shell env-var assignment.
+/// Accepts `VAR=val`, `VAR="val"`, `VAR='val'`, and the opening fragment of a
+/// quoted value that spans multiple whitespace-split tokens (e.g. `VAR="hello`).
+fn looks_like_env_assignment(token: &str) -> bool {
+    let Some(eq_pos) = token.find('=') else {
+        return false;
+    };
+    // The name part (before '=') must be a valid shell identifier: [A-Za-z_][A-Za-z0-9_]*
+    let name = &token[..eq_pos];
+    if name.is_empty() {
+        return false;
+    }
+    let mut chars = name.chars();
+    let first = chars.next().unwrap();
+    if !(first.is_ascii_alphabetic() || first == '_') {
+        return false;
+    }
+    chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// When an env-var assignment has a quoted value that contains spaces,
+/// `split_whitespace` will scatter it across multiple tokens.
+/// e.g. `PATH="/usr/local/ bin:$PATH"` -> [`PATH="/usr/local/`, `bin:$PATH"`]
+///
+/// Returns the number of tokens consumed (including the current one),
+/// or `None` if the value is not quoted / is fully closed in a single token.
+fn quoted_env_token_len(words: &[&str], start: usize) -> Option<usize> {
+    let token = words[start];
+    let eq_pos = token.find('=')?;
+    let after_eq = &token[eq_pos + 1..];
+
+    // Detect which quote character opens the value
+    let quote_char = if after_eq.starts_with('"') {
+        '"'
+    } else if after_eq.starts_with('\'') {
+        '\''
+    } else {
+        return None; // unquoted — single token
+    };
+
+    // Check if the quote is already closed within this token
+    // (value starts after the opening quote)
+    let value_after_open = &after_eq[1..];
+    if value_after_open.contains(quote_char) {
+        return None; // fully closed in this one token
+    }
+
+    // Walk forward until we find the closing quote
+    let mut count = 1;
+    for &w in &words[start + 1..] {
+        count += 1;
+        if w.contains(quote_char) {
+            return Some(count);
+        }
+    }
+    // Never closed — consume everything (malformed, but don't get stuck)
+    Some(count)
+}
+
 /// Normalize a full command string into a tool name.
 /// e.g. "git diff src/main.rs" -> "git diff"
 ///      "ls -la /some/path" -> "ls"
@@ -117,13 +176,22 @@ pub fn normalize_tool(command: &str, patterns: &HashSet<String>) -> String {
             return "unknown".to_string();
         }
 
-        let word = words[i].rsplit('/').next().unwrap_or(words[i]);
-
-        // Skip env-var assignments (FOO=bar)
-        if word.contains('=') {
-            i += 1;
+        // Skip env-var assignments (VAR=value, VAR="value with/paths", etc.)
+        // Must check the raw token BEFORE stripping path prefixes, because
+        // rsplit('/') on e.g. PATH="/usr/local/bin:$PATH" yields bin:$PATH"
+        // which no longer contains '='.
+        if looks_like_env_assignment(words[i]) {
+            // The value may be quoted and contain spaces, so consume continuation
+            // tokens that are still inside an open quote.
+            if let Some(skip) = quoted_env_token_len(&words, i) {
+                i += skip;
+            } else {
+                i += 1;
+            }
             continue;
         }
+
+        let word = words[i].rsplit('/').next().unwrap_or(words[i]);
 
         // Check prefix commands table
         if let Some(&(_, value_flags, skip_positional)) =
@@ -304,6 +372,50 @@ mod tests {
         let p = default_patterns();
         assert_eq!(normalize_tool("EDITOR=vim git commit", &p), "git commit");
         assert_eq!(normalize_tool("FOO=1 BAR=2 ls", &p), "ls");
+    }
+
+    #[test]
+    fn test_normalize_env_prefix_with_paths() {
+        let p = default_patterns();
+        let rg_patterns = patterns(&["rg"]);
+
+        // Double-quoted PATH with slashes and $PATH — the original bug
+        assert_eq!(
+            normalize_tool(r#"PATH="/usr/local/bin:$PATH" rg pattern"#, &rg_patterns),
+            "rg"
+        );
+        assert_eq!(
+            normalize_tool(r#"PATH="/home/user/.cargo/bin:$PATH" git diff"#, &p),
+            "git diff"
+        );
+        assert_eq!(
+            normalize_tool(r#"PATH="/usr/local/bin:$PATH" grep -r pattern"#, &p),
+            "grep"
+        );
+
+        // Single-quoted value with paths
+        assert_eq!(
+            normalize_tool("PATH='/usr/local/bin:$PATH' cargo build", &p),
+            "cargo build"
+        );
+
+        // Unquoted value with paths (no spaces)
+        assert_eq!(
+            normalize_tool("PATH=/usr/local/bin:$PATH rg pattern", &rg_patterns),
+            "rg"
+        );
+
+        // Multiple env vars with paths
+        assert_eq!(
+            normalize_tool(r#"PATH="/usr/local/bin:$PATH" HOME=/tmp git status"#, &p),
+            "git status"
+        );
+
+        // Quoted value with spaces (multi-token env assignment)
+        assert_eq!(
+            normalize_tool(r#"MSG="hello world" git diff"#, &p),
+            "git diff"
+        );
     }
 
     #[test]

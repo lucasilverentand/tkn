@@ -4,6 +4,7 @@ match = "git log"
 add = [
     "--oneline|--pretty|--format",
     "-20|-n|--max-count",
+    "--no-color|--color|--color=never|--color=always|--color=auto",
 ]
 savings_factor = 10.0
 

@@ -5,6 +5,7 @@ truncate = "top"
 strip = [
     "Permission denied",
     "/\\.git/",
+    "/\\.git$",
     "/node_modules/",
     "/__pycache__/",
     "\\.DS_Store$",

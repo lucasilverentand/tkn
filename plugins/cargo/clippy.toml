@@ -9,5 +9,7 @@ strip = [
     "^\\s*Downloading\\s",
     "^\\s*Downloaded\\s",
     "^\\s*Finished\\s",
+    "^\\s*Fresh\\s",
     "^\\s*Locking\\s",
+    "^\\s*Blocking waiting for",
 ]
