@@ -8,5 +8,6 @@ strip = [
     "^ .+\\|\\s+\\d+",
     "^[→✓✗╭╰│├└─]",
     "^Warning: can't set",
+    "^\\s*mode change \\d+",
 ]
 max_lines = 50

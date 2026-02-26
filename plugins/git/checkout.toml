@@ -1,0 +1,7 @@
+match = "git checkout"
+
+[optimize]
+max_lines = 50
+strip = [
+    "^hint:",
+]

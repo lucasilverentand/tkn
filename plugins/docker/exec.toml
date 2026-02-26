@@ -1,0 +1,4 @@
+match = "docker exec"
+
+[optimize]
+max_lines = 200

@@ -33,6 +33,15 @@ fn run_pipeline_inner(
     let mut was_truncated = false;
 
     if let Some(config) = tool_config {
+        // Collapse consecutive duplicate lines before filtering — reduces noise from
+        // repetitive build/test/log output while ANSI is already stripped.
+        optimized = basic::collapse_duplicate_lines(&optimized);
+
+        // Compact JSON before filtering so strip/keep patterns see single-line JSON
+        if config.optimize.compact_json {
+            optimized = basic::compact_json(&optimized);
+        }
+
         // Plugin exists → apply its strip/keep filters
         optimized = apply_tool_filters(&optimized, config);
     }
@@ -208,7 +217,8 @@ mod tests {
             ..Default::default()
         });
 
-        let input = "a\n".repeat(100);
+        // Use distinct lines so collapse_duplicate_lines doesn't reduce the count
+        let input: String = (1..=100).map(|i| format!("line {i}\n")).collect();
         let raw = input.as_bytes();
         let result = run_pipeline(raw, Some(&config));
         assert!(result.was_truncated);
@@ -359,6 +369,29 @@ mod tests {
         let input = "total 48\ndrwxr-xr-x  5 luca  staff  160B Feb 16 14:30 src\n-rw-r--r--  1 luca  staff  2.3K Feb 16 14:30 Cargo.toml";
         let result = apply_tool_filters(input, &config);
         assert_eq!(result, "160B Feb 16 14:30 src\n2.3K Feb 16 14:30 Cargo.toml");
+    }
+
+    #[test]
+    fn test_compact_json_in_pipeline() {
+        let config = config_with_optimize(OptimizeConfig {
+            compact_json: true,
+            ..Default::default()
+        });
+
+        let input = b"{\n  \"name\": \"tkn\",\n  \"version\": \"0.1.0\"\n}";
+        let result = run_pipeline(input, Some(&config));
+        assert_eq!(result.content, r#"{"name":"tkn","version":"0.1.0"}"#);
+        assert!(!result.was_truncated);
+    }
+
+    #[test]
+    fn test_compact_json_disabled_by_default() {
+        let config = config_with_optimize(OptimizeConfig::default());
+
+        let input = b"{\n  \"name\": \"tkn\"\n}";
+        let result = run_pipeline(input, Some(&config));
+        // Without compact_json, pretty-printed JSON stays as-is
+        assert!(result.content.contains('\n'));
     }
 
     #[test]

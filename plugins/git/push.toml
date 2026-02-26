@@ -1,5 +1,8 @@
 match = "git push"
 
+[transform]
+add = ["--no-color|--color|--color=never|--color=always|--color=auto"]
+
 [optimize]
 truncate = "bottom"
 max_lines = 100

@@ -1,0 +1,4 @@
+match = "npm view"
+
+[optimize]
+max_lines = 50

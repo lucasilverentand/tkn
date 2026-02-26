@@ -15,5 +15,9 @@ strip = [
     "^--- [ab]/",
     "^\\+\\+\\+ [ab]/",
     "^\\\\ No newline at end of file",
+    "^Binary files .* differ$",
+    "^GIT binary patch$",
+    "^literal \\d+",
+    "^delta \\d+",
 ]
 max_lines = 300

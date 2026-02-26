@@ -77,6 +77,10 @@ pub struct OptimizeConfig {
     /// When false (default), stderr is only ANSI-stripped and appended unfiltered/untruncated.
     #[serde(default)]
     pub optimize_stderr: bool,
+
+    /// When true, detected JSON output is compacted (pretty-printed → single line).
+    #[serde(default)]
+    pub compact_json: bool,
 }
 
 /// Returns all built-in plugins as (bundle, name, toml_content) triples.
@@ -115,6 +119,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("npm", "npm-run", include_str!("../plugins/npm/run.toml")),
         ("npm", "npm-test", include_str!("../plugins/npm/test.toml")),
         ("npm", "npm-install", include_str!("../plugins/npm/install.toml")),
+        ("npm", "npm-view", include_str!("../plugins/npm/view.toml")),
         // pnpm
         ("pnpm", "pnpm-install", include_str!("../plugins/pnpm/install.toml")),
         ("pnpm", "pnpm-list", include_str!("../plugins/pnpm/list.toml")),
@@ -136,6 +141,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("docker", "docker-logs", include_str!("../plugins/docker/logs.toml")),
         ("docker", "docker-build", include_str!("../plugins/docker/build.toml")),
         ("docker", "docker-compose", include_str!("../plugins/docker/compose.toml")),
+        ("docker", "docker-exec", include_str!("../plugins/docker/exec.toml")),
         ("kubectl", "kubectl-get", include_str!("../plugins/kubectl/get.toml")),
         ("kubectl", "kubectl-logs", include_str!("../plugins/kubectl/logs.toml")),
         // js/ts linters
@@ -149,6 +155,11 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("git", "git-fetch", include_str!("../plugins/git/fetch.toml")),
         ("git", "git-add", include_str!("../plugins/git/add.toml")),
         ("git", "git-blame", include_str!("../plugins/git/blame.toml")),
+        ("git", "git-remote", include_str!("../plugins/git/remote.toml")),
+        ("git", "git-checkout", include_str!("../plugins/git/checkout.toml")),
+        ("git", "git-rm", include_str!("../plugins/git/rm.toml")),
+        ("git", "git-worktree", include_str!("../plugins/git/worktree.toml")),
+        ("git", "git-ls-files", include_str!("../plugins/git/ls-files.toml")),
         // biome
         ("biome", "biome-check", include_str!("../plugins/biome/check.toml")),
         ("biome", "biome-format", include_str!("../plugins/biome/format.toml")),
@@ -355,7 +366,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 80);
+        assert_eq!(plugins.len(), 87);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));
@@ -368,7 +379,7 @@ mod tests {
     fn test_builtin_plugins_have_bundles() {
         let plugins = builtin_plugins();
         let git_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "git").collect();
-        assert_eq!(git_plugins.len(), 12);
+        assert_eq!(git_plugins.len(), 17);
         let cargo_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "cargo").collect();
         assert_eq!(cargo_plugins.len(), 5);
         let bun_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "bun").collect();

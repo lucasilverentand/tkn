@@ -1,0 +1,9 @@
+match = "git remote"
+
+[optimize]
+max_lines = 50
+# Strip duplicate fetch/push lines — when both point to the same URL,
+# the push line is redundant info
+strip = [
+    "\\(push\\)$",
+]

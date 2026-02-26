@@ -54,6 +54,11 @@ max_lines = 50
 pattern = "^[dlcbps-][rwxsStT@+-]{9}[.@+]?\\s+\\d+\\s+\\S+\\s+\\S+\\s+"
 replacement = ""
 
+# Strip date/time from size+date+name format, keeping just size and name
+[[optimize.replace]]
+pattern = "(\\d+\\.?\\d*[KMGTP]?B?)\\s+\\w{3}\\s+\\d{1,2}\\s+[\\d:]+\\s+"
+replacement = "$1 "
+
 # Strip Unicode Private Use Area characters (Nerd Font / eza / lsd icons)
 [[optimize.replace]]
 pattern = "[\\x{E000}-\\x{F8FF}]\\s?"
