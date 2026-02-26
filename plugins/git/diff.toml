@@ -1,5 +1,8 @@
 match = "git diff"
 
+[transform]
+add = ["--no-color|--color|--color=never|--color=always|--color=auto"]
+
 [optimize]
 truncate = "bottom"
 strip = [

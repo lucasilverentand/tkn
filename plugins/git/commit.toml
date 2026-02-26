@@ -6,5 +6,7 @@ strip = [
     "^ (create|delete|copy) mode \\d+",
     "^ rename .+ => .+",
     "^ .+\\|\\s+\\d+",
+    "^[→✓✗╭╰│├└─]",
+    "^Warning: can't set",
 ]
 max_lines = 50

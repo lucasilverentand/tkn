@@ -1,7 +1,11 @@
 match = "tree"
 
 [transform]
-add = ["--gitignore"]
+add = [
+    "--gitignore",
+    "--noreport",
+    "-n|--no-color|-C|--color",
+]
 savings_factor = 10.0
 
 [optimize]

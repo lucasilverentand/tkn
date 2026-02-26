@@ -11,4 +11,8 @@ strip = [
     "^Delta compression ",
     "^Total \\d+",
     "^remote: Resolving deltas:",
+    "^remote:\\s*$",
+    "^remote:.*vulnerabilit",
+    "^remote:\\s+https://",
+    "^hint:",
 ]

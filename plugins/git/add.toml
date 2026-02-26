@@ -7,4 +7,6 @@ strip = [
     "^warning: LF will be replaced",
     "^warning: CRLF will be replaced",
     "^\\s*$",
+    "^hint:",
+    "^The following paths are ignored",
 ]

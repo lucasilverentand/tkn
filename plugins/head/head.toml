@@ -2,3 +2,8 @@ match = "head"
 
 [optimize]
 max_lines = 200
+
+# Shorten home directory paths
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

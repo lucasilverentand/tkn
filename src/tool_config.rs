@@ -88,6 +88,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("cargo", "cargo-build", include_str!("../plugins/cargo/build.toml")),
         ("cargo", "cargo-test", include_str!("../plugins/cargo/test.toml")),
         ("cargo", "cargo-clippy", include_str!("../plugins/cargo/clippy.toml")),
+        ("cargo", "cargo-fmt", include_str!("../plugins/cargo/fmt.toml")),
         ("gh", "gh-issue", include_str!("../plugins/gh/issue.toml")),
         ("gh", "gh-pr", include_str!("../plugins/gh/pr.toml")),
         ("gh", "gh-repo", include_str!("../plugins/gh/repo.toml")),
@@ -134,6 +135,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("docker", "docker-images", include_str!("../plugins/docker/images.toml")),
         ("docker", "docker-logs", include_str!("../plugins/docker/logs.toml")),
         ("docker", "docker-build", include_str!("../plugins/docker/build.toml")),
+        ("docker", "docker-compose", include_str!("../plugins/docker/compose.toml")),
         ("kubectl", "kubectl-get", include_str!("../plugins/kubectl/get.toml")),
         ("kubectl", "kubectl-logs", include_str!("../plugins/kubectl/logs.toml")),
         // js/ts linters
@@ -163,6 +165,8 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         // misc
         ("wget", "wget", include_str!("../plugins/wget/wget.toml")),
         ("make", "make", include_str!("../plugins/make/make.toml")),
+        ("du", "du", include_str!("../plugins/du/du.toml")),
+        ("ps", "ps", include_str!("../plugins/ps/ps.toml")),
         // rg / wc / nl
         ("rg", "rg", include_str!("../plugins/rg/rg.toml")),
         ("wc", "wc", include_str!("../plugins/wc/wc.toml")),
@@ -351,7 +355,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 76);
+        assert_eq!(plugins.len(), 80);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));
@@ -366,7 +370,7 @@ mod tests {
         let git_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "git").collect();
         assert_eq!(git_plugins.len(), 12);
         let cargo_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "cargo").collect();
-        assert_eq!(cargo_plugins.len(), 4);
+        assert_eq!(cargo_plugins.len(), 5);
         let bun_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "bun").collect();
         assert_eq!(bun_plugins.len(), 6);
         let grep_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "grep").collect();

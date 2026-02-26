@@ -10,6 +10,7 @@ add = [
 truncate = "top"
 strip = [
     "^Binary file .* matches$",
+    "^--$",
 ]
 max_lines = 100
 

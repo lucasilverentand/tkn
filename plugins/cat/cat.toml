@@ -3,3 +3,8 @@ match = "cat"
 [optimize]
 truncate = "bottom"
 max_lines = 300
+
+# Shorten home directory paths
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

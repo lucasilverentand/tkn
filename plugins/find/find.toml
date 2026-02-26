@@ -27,5 +27,16 @@ strip = [
     "\\.egg-info/",
     "/build/",
     "/out/",
+    "/\\.build/",
+    "/Derived/",
+    "/\\.swiftpm/",
+    "/Pods/",
+    "/DerivedData/",
+    "/\\.Trash/",
 ]
 max_lines = 150
+
+# Shorten home directory paths to ~/
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

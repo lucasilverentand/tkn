@@ -1,0 +1,9 @@
+match = "cargo fmt"
+
+[optimize]
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*Finished\\s",
+    "^\\s*Compiling\\s",
+]

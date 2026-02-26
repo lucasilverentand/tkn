@@ -62,7 +62,19 @@ pub fn transform_command(command: &str, config: &ToolConfig) -> String {
         let insert_pos = parts
             .iter()
             .rposition(|p| p.starts_with('-'))
-            .map(|i| i + 1)
+            .map(|i| {
+                // If the next token after the flag is a numeric value, it's likely a
+                // flag argument (e.g. "-L 3", "--depth 2", "-n 20"). Skip past it
+                // so we don't insert new flags between a flag and its value.
+                let next = i + 1;
+                if next < parts.len()
+                    && parts[next].chars().all(|c| c.is_ascii_digit())
+                {
+                    next + 1
+                } else {
+                    next
+                }
+            })
             .unwrap_or_else(|| {
                 // No flags present — insert after the command prefix.
                 // The match pattern tells us how many leading tokens are
@@ -291,6 +303,27 @@ mod tests {
         assert_eq!(
             transform_command("ls plugins/", &config),
             "ls -1 -h plugins/"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_skips_flag_value() {
+        // Flags like -L that take a separate value argument should not be split.
+        // "tree -L 1" + adding "--noreport" should NOT produce "tree -L --noreport 1"
+        let config = make_config_with_match("tree", vec!["--noreport", "-n|--no-color"], vec![], vec![]);
+        assert_eq!(
+            transform_command("tree -L 1", &config),
+            "tree -L 1 --noreport -n"
+        );
+    }
+
+    #[test]
+    fn test_add_flag_skips_long_flag_value() {
+        // Long flags like --depth that take a separate value should not be split.
+        let config = make_config_with_match("tree", vec!["--noreport"], vec![], vec![]);
+        assert_eq!(
+            transform_command("tree --depth 3 src/", &config),
+            "tree --depth 3 --noreport src/"
         );
     }
 

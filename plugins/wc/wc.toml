@@ -2,6 +2,9 @@ match = "wc"
 
 [optimize]
 max_lines = 50
+strip = [
+    "^\\s*\\d+\\s+total$",
+]
 
 # Shorten home directory paths
 [[optimize.replace]]

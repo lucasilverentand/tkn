@@ -39,6 +39,13 @@ strip = [
     "\\b\\.nyc_output$",
     "\\b\\.idea$",
     "\\b\\.vscode$",
+    "\\b\\.build$",
+    "\\bDerived$",
+    "\\b\\.swiftpm$",
+    "\\bPods$",
+    "\\b\\.gradle$",
+    "\\bdist$",
+    "\\b\\.tox$",
 ]
 max_lines = 50
 
@@ -51,3 +58,8 @@ replacement = ""
 [[optimize.replace]]
 pattern = "[\\x{E000}-\\x{F8FF}]\\s?"
 replacement = ""
+
+# Shorten home directory paths to ~/
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"
