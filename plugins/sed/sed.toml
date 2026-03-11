@@ -2,4 +2,9 @@ match = "sed"
 
 [optimize]
 truncate = "bottom"
-max_lines = 200
+max_lines = 100
+
+# Shorten home directory paths
+[[optimize.replace]]
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

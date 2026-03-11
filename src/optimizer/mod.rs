@@ -32,6 +32,9 @@ fn run_pipeline_inner(
     let mut optimized = strip_ansi(&raw_str, raw_mode);
     let mut was_truncated = false;
 
+    // Global: shorten absolute CWD paths to "./" and home paths to "~/"
+    optimized = basic::shorten_paths(&optimized);
+
     if let Some(config) = tool_config {
         // Collapse consecutive duplicate lines before filtering — reduces noise from
         // repetitive build/test/log output while ANSI is already stripped.

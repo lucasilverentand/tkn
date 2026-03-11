@@ -2,7 +2,7 @@ match = "git push"
 
 [optimize]
 truncate = "bottom"
-max_lines = 100
+max_lines = 50
 strip = [
     "^Enumerating objects:",
     "^Counting objects:",
@@ -14,5 +14,8 @@ strip = [
     "^remote:\\s*$",
     "^remote:.*vulnerabilit",
     "^remote:\\s+https://",
+    "^remote: This repository moved",
+    "^remote: Create a pull request",
     "^hint:",
+    "^\\s*$",
 ]

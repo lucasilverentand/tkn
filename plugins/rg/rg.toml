@@ -11,8 +11,9 @@ truncate = "top"
 strip = [
     "^Binary file .* matches$",
     "^--$",
+    "^\\s*$",
 ]
-max_lines = 100
+max_lines = 75
 
 # Shorten home directory paths
 [[optimize.replace]]

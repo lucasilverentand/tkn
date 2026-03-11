@@ -8,10 +8,12 @@ truncate = "top"
 strip = [
     "^Binary file .* matches$",
     "Permission denied",
+    "^grep: ",
+    "^\\s*$",
 ]
 max_lines = 50
 
 # Strip absolute home directory prefix from file paths
 [[optimize.replace]]
-pattern = "^/(Users|home)/[^/]+/"
-replacement = ""
+pattern = "/(Users|home)/[^/]+/"
+replacement = "~/"

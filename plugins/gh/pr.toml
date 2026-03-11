@@ -1,13 +1,16 @@
 match = "gh pr"
 
 [optimize]
-max_lines = 150
+max_lines = 100
 strip = [
     "^—+$",
+    "^-+$",
     "^View this pull request on GitHub:",
     "^https://github\\.com/",
     "^No description provided\\.",
     "^\\s+$",
     "https://github\\.com/.*/runs/\\d+",
     "^\\s*Merging is blocked",
+    "^\\s*Co-Authored-By:",
+    "^\\s*Generated with",
 ]

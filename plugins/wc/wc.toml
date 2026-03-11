@@ -6,7 +6,11 @@ strip = [
     "^\\s*\\d+\\s+total$",
 ]
 
-# Shorten home directory paths
+# Collapse leading whitespace padding and shorten home paths
+[[optimize.replace]]
+pattern = "^\\s+"
+replacement = ""
+
 [[optimize.replace]]
 pattern = "/(Users|home)/[^/]+/"
 replacement = "~/"

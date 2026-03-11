@@ -11,4 +11,13 @@ strip = [
     "\"site_admin\":\\s",
     "\"permissions\":\\s",
     "\"type\":\\s*\"User\"",
+    "\"events_url\":",
+    "\"received_events_url\":",
+    "\"followers_url\":",
+    "\"following_url\":",
+    "\"gists_url\":",
+    "\"starred_url\":",
+    "\"subscriptions_url\":",
+    "\"organizations_url\":",
+    "\"repos_url\":",
 ]

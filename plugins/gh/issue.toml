@@ -1,11 +1,14 @@
 match = "gh issue"
 
 [optimize]
-max_lines = 150
+max_lines = 100
 strip = [
     "^—+$",
+    "^-+$",
     "^View this issue on GitHub:",
     "^https://github\\.com/",
     "^No description provided\\.",
     "^\\s+$",
+    "^milestone:\\s*$",
+    "^projects:\\s*$",
 ]

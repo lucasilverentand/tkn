@@ -1,5 +1,16 @@
 match = "kubectl logs"
 
+[transform]
+add = ["--tail=200|--tail|-c|--since"]
+
 [optimize]
 truncate = "bottom"
 max_lines = 100
+strip = [
+    "^\\s*$",
+]
+
+# Strip ISO-8601 timestamp prefixes from structured log lines
+[[optimize.replace]]
+pattern = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[.\\d]*Z?\\s*"
+replacement = ""

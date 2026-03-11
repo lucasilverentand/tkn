@@ -98,6 +98,36 @@ pub fn collapse_duplicate_lines(input: &str) -> String {
     result
 }
 
+/// Replace absolute CWD paths with relative "./" paths.
+///
+/// e.g. if CWD is "/Users/luca/Developer/tkn", then
+/// "/Users/luca/Developer/tkn/src/main.rs" → "./src/main.rs"
+///
+/// Also shortens home directory to "~/" for paths outside CWD.
+pub fn shorten_paths(input: &str) -> String {
+    let cwd = match std::env::current_dir() {
+        Ok(p) => p.to_string_lossy().to_string(),
+        Err(_) => return input.to_string(),
+    };
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
+
+    let mut result = input.to_string();
+
+    // CWD path shortening (must come first — more specific)
+    if !cwd.is_empty() {
+        let cwd_with_slash = format!("{cwd}/");
+        result = result.replace(&cwd_with_slash, "./");
+    }
+
+    // Home directory shortening for remaining absolute paths
+    if let Some(ref home_path) = home {
+        let home_with_slash = format!("{home_path}/");
+        result = result.replace(&home_with_slash, "~/");
+    }
+
+    result
+}
+
 /// Compact JSON output by removing unnecessary whitespace/indentation.
 ///
 /// If the input looks like JSON (starts with `{` or `[` after trimming) and
@@ -247,6 +277,29 @@ mod tests {
             result,
             "header\nok\n[... repeated 3 more times]\nfooter\nunique\nunique"
         );
+    }
+
+    #[test]
+    fn test_shorten_paths_cwd() {
+        let cwd = std::env::current_dir().unwrap().to_string_lossy().to_string();
+        let input = format!("{cwd}/src/main.rs:10: fn main()");
+        let result = shorten_paths(&input);
+        assert_eq!(result, "./src/main.rs:10: fn main()");
+    }
+
+    #[test]
+    fn test_shorten_paths_home() {
+        let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+        // Use a path that's NOT under CWD so home shortening kicks in
+        let input = format!("{home}/.config/some_tool.toml");
+        let result = shorten_paths(&input);
+        assert_eq!(result, "~/.config/some_tool.toml");
+    }
+
+    #[test]
+    fn test_shorten_paths_no_match() {
+        let input = "/usr/local/bin/something";
+        assert_eq!(shorten_paths(input), input);
     }
 
     #[test]

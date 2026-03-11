@@ -2,7 +2,7 @@ match = "cargo test"
 
 [optimize]
 truncate = "bottom"
-max_lines = 200
+max_lines = 150
 strip = [
     "^test .+ \\.\\.\\. ok$",
     "^\\s*Finished\\s",
@@ -20,4 +20,8 @@ strip = [
     "^\\s*warning:.*unused",
     "^\\s*= help:",
     "^\\s*= note:",
+    "^\\s*Packaging\\s",
+    "^\\s*Updating\\s",
+    "^\\s*Parsing\\s",
+    "^\\s*$",
 ]

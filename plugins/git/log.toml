@@ -15,5 +15,13 @@ strip = [
     "^Author:",
     "^Date:",
     "^Merge:",
+    "^gpg:",
+    "^Primary key fingerprint:",
+    "^\\s*$",
 ]
-max_lines = 200
+max_lines = 100
+
+# Shorten full 40-char commit hashes to 7-char abbreviations
+[[optimize.replace]]
+pattern = "^([a-f0-9]{7})[a-f0-9]{33} "
+replacement = "$1 "

@@ -9,6 +9,7 @@ strip = [
     "^diff --git ",
     "^index [a-f0-9]",
     "^(old|new) mode ",
+    "^(new file|deleted file) mode ",
     "^similarity index ",
     "^rename (from|to) ",
     "^copy (from|to) ",
@@ -19,5 +20,11 @@ strip = [
     "^GIT binary patch$",
     "^literal \\d+",
     "^delta \\d+",
+    "^[A-Za-z][a-f0-9]{39,}$",
 ]
 max_lines = 300
+
+# Strip function/class context from hunk headers, keep only line range
+[[optimize.replace]]
+pattern = "^(@@ -\\d+,?\\d* \\+\\d+,?\\d* @@).*"
+replacement = "$1"

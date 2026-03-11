@@ -5,4 +5,10 @@ truncate = "top"
 max_lines = 100
 strip = [
     "^\\s*$",
+    "^No resources found",
 ]
+
+# Collapse multi-space column padding to single tab for compactness
+[[optimize.replace]]
+pattern = "  +"
+replacement = "\t"
