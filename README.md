@@ -21,18 +21,20 @@ AI coding assistants like Claude Code spend a large chunk of their context windo
 
 ## How it works
 
-```
-Assistant runs: git diff src/
-             ↓
-       tkn intercepts
-             ↓
-  ┌─ transforms flags (e.g. adds --stat)
-  ├─ captures stdout/stderr
-  ├─ strips ANSI codes, filters noise
-  └─ truncates to relevant lines
-             ↓
-   Optimized output returned
-     (fewer tokens, same signal)
+```mermaid
+flowchart LR
+    A["AI assistant runs\n<code>git diff src/</code>"] --> B["tkn\nintercepts"]
+    B --> C["Transform\nflags"]
+    C --> D["Capture\noutput"]
+    D --> E["Strip ANSI\nFilter noise\nTruncate"]
+    E --> F["Optimized output\nfewer tokens, same signal"]
+
+    style A fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style B fill:#1e40af,stroke:#3b82f6,color:#e2e8f0
+    style C fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style D fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style E fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style F fill:#065f46,stroke:#10b981,color:#e2e8f0
 ```
 
 tkn uses a **plugin system** with 35+ built-in tool plugins (git, cargo, docker, kubectl, npm, and more) that know which flags to add, which output lines to keep, and how to truncate intelligently.
