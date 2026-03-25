@@ -1,8 +1,14 @@
 match = "docker ps"
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 max_lines = 50
 strip = [
     "^\\s*$",
 ]
+
+# Collapse multi-space column padding to single tab
+[[optimize.replace]]
+pattern = "  +"
+replacement = "\t"

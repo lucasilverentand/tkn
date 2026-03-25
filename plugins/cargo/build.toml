@@ -1,6 +1,7 @@
 match = "cargo build"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [
@@ -12,6 +13,7 @@ strip = [
     "^\\s*Fresh\\s",
     "^\\s*Locking\\s",
     "^\\s*Blocking waiting for",
+    "^\\s*Updating\\s",
 ]
 keep = [
     "(?i)error",

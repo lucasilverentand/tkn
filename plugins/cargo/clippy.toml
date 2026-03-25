@@ -1,6 +1,7 @@
 match = "cargo clippy"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [
@@ -12,4 +13,6 @@ strip = [
     "^\\s*Fresh\\s",
     "^\\s*Locking\\s",
     "^\\s*Blocking waiting for",
+    "^\\s*Updating\\s",
+    "^\\s*$",
 ]

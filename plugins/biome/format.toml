@@ -1,6 +1,10 @@
 match = "biome format"
 
+[transform]
+add = ["--colors=off|--colors"]
+
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 100
 strip = [

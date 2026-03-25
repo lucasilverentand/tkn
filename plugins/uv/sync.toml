@@ -1,0 +1,14 @@
+match = "uv sync"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^Resolved \\d+ packages",
+    "^Prepared \\d+ packages",
+    "^\\s*Using ",
+    "^Updated ",
+    "^Audited \\d+ packages",
+]

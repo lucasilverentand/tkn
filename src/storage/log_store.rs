@@ -5,14 +5,18 @@ use crate::types::LogEntry;
 use super::StorageManager;
 
 impl StorageManager {
-    pub fn write_log(&self, ref_id: &str, raw_output: &[u8], entry: &LogEntry) -> std::io::Result<()> {
+    pub fn write_log(
+        &self,
+        ref_id: &str,
+        raw_output: &[u8],
+        entry: &LogEntry,
+    ) -> std::io::Result<()> {
         let log_path = self.logs_dir().join(format!("{ref_id}.log"));
         let meta_path = self.logs_dir().join(format!("{ref_id}.json"));
 
         fs::write(&log_path, raw_output)?;
 
-        let json = serde_json::to_string_pretty(entry)
-            .map_err(std::io::Error::other)?;
+        let json = serde_json::to_string_pretty(entry).map_err(std::io::Error::other)?;
         fs::write(&meta_path, json)?;
 
         Ok(())
@@ -26,8 +30,7 @@ impl StorageManager {
     pub fn read_log_entry(&self, ref_id: &str) -> std::io::Result<LogEntry> {
         let meta_path = self.logs_dir().join(format!("{ref_id}.json"));
         let content = fs::read_to_string(&meta_path)?;
-        serde_json::from_str(&content)
-            .map_err(std::io::Error::other)
+        serde_json::from_str(&content).map_err(std::io::Error::other)
     }
 
     pub fn list_log_entries(&self) -> std::io::Result<Vec<LogEntry>> {

@@ -1,0 +1,15 @@
+match = "dotnet build"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+keep = [
+    "(?i)error ",
+    "(?i)warning ",
+    "Build succeeded",
+    "Build FAILED",
+    "\\d+ Warning\\(s\\)",
+    "\\d+ Error\\(s\\)",
+    "^\\s+-->",
+]

@@ -1,6 +1,7 @@
 match = "pnpm list"
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 strip = [
     "^[│├└─┬]+",            # box-drawing decoration

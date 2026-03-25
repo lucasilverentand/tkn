@@ -1,4 +1,5 @@
 match = "docker exec"
 
 [optimize]
+optimize_stderr = true
 max_lines = 200

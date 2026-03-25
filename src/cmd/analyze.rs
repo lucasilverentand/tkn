@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::fs;
 
+use crate::shell;
 use crate::storage::StorageManager;
 use crate::tool_config;
 use crate::types::normalize_tool;
-use crate::shell;
 
 pub fn scan() -> i32 {
     let storage = StorageManager::new();
@@ -41,8 +41,7 @@ pub fn scan() -> i32 {
         .map(|(name, summary)| {
             let has_plugin = tool_config::load_tool_config(&name).is_some();
             let savings_pct = if summary.total_raw > 0 {
-                ((summary.total_raw - summary.total_optimized) as f64
-                    / summary.total_raw as f64)
+                ((summary.total_raw - summary.total_optimized) as f64 / summary.total_raw as f64)
                     * 100.0
             } else {
                 0.0
@@ -71,7 +70,8 @@ pub fn scan() -> i32 {
             // Opportunity score: high bytes * low savings * frequency
             // Tools with no plugin and large outputs rank highest
             let plugin_penalty = if has_plugin { 0.3 } else { 1.0 };
-            let mut score = avg_raw * summary.count as f64 * plugin_penalty * (1.0 - savings_pct / 100.0);
+            let mut score =
+                avg_raw * summary.count as f64 * plugin_penalty * (1.0 - savings_pct / 100.0);
 
             // Boost score for tools where optimizer is too aggressive
             if full_log_reads > 0 {
@@ -131,8 +131,13 @@ pub fn scan() -> i32 {
 
         println!(
             "  {:<22} {:>5} {:>8.0} B {:>6.1}% {:>8} {:>6.0}  {}",
-            tool.name, tool.count, tool.avg_raw, tool.savings_pct, plugin_str,
-            tool.avg_duration_ms, issues_str
+            tool.name,
+            tool.count,
+            tool.avg_raw,
+            tool.savings_pct,
+            plugin_str,
+            tool.avg_duration_ms,
+            issues_str
         );
     }
 
@@ -142,7 +147,10 @@ pub fn scan() -> i32 {
     // Priority 1: Full log reads (optimizer too aggressive)
     let high_reads: Vec<_> = ranked.iter().filter(|t| t.full_log_reads > 0).collect();
     if !high_reads.is_empty() {
-        let names: Vec<_> = high_reads.iter().map(|t| format!("\"{}\"", t.name)).collect();
+        let names: Vec<_> = high_reads
+            .iter()
+            .map(|t| format!("\"{}\"", t.name))
+            .collect();
         recommendations.push((
             0,
             format!(
@@ -166,7 +174,10 @@ pub fn scan() -> i32 {
                 1,
                 format!(
                     "\"{}\" has a {:.0}% failure rate ({} failures in {} runs).",
-                    tool.name, rate * 100.0, tool.failures, tool.count,
+                    tool.name,
+                    rate * 100.0,
+                    tool.failures,
+                    tool.count,
                 ),
                 format!("tkn analyze report -- {}", tool.name),
             ));
@@ -384,8 +395,7 @@ pub fn report(args: &[String]) -> i32 {
         println!("  Min duration:      {min} ms");
         println!("  Max duration:      {max} ms");
         if sorted_dur.len() >= 2 {
-            let p95_idx =
-                ((sorted_dur.len() as f64 * 0.95) as usize).min(sorted_dur.len() - 1);
+            let p95_idx = ((sorted_dur.len() as f64 * 0.95) as usize).min(sorted_dur.len() - 1);
             println!("  P95 duration:      {} ms", sorted_dur[p95_idx]);
         }
     }
@@ -393,11 +403,7 @@ pub fn report(args: &[String]) -> i32 {
     // --- Transformations ---
     let transformed: Vec<_> = matching
         .iter()
-        .filter_map(|e| {
-            e.transformed_command
-                .as_ref()
-                .map(|tc| (&e.command, tc))
-        })
+        .filter_map(|e| e.transformed_command.as_ref().map(|tc| (&e.command, tc)))
         .collect();
     if !transformed.is_empty() {
         println!();
@@ -567,10 +573,7 @@ pub fn report(args: &[String]) -> i32 {
                     if rule.replacement.is_empty() {
                         println!("  replace: /{}/  (delete)", rule.pattern);
                     } else {
-                        println!(
-                            "  replace: /{}/ -> \"{}\"",
-                            rule.pattern, rule.replacement
-                        );
+                        println!("  replace: /{}/ -> \"{}\"", rule.pattern, rule.replacement);
                     }
                 }
                 has_rules = true;
@@ -651,8 +654,7 @@ fn analyze(outputs: &[String]) -> Analysis {
 
     for output in outputs {
         let mut seen_lines: std::collections::HashSet<String> = std::collections::HashSet::new();
-        let mut seen_prefixes: std::collections::HashSet<String> =
-            std::collections::HashSet::new();
+        let mut seen_prefixes: std::collections::HashSet<String> = std::collections::HashSet::new();
 
         for line in output.lines() {
             let trimmed = line.trim();

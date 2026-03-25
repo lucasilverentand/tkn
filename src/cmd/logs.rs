@@ -24,8 +24,12 @@ pub fn run(id: Option<&str>, reason: Option<&str>, lines: Option<&str>) -> i32 {
 /// Returns (start, end) as 0-based indices suitable for slicing.
 fn parse_line_spec(spec: &str) -> Result<(usize, Option<usize>), String> {
     if let Some((start, end)) = spec.split_once(':') {
-        let s: usize = start.parse().map_err(|_| format!("invalid start line: {start}"))?;
-        let e: usize = end.parse().map_err(|_| format!("invalid end line: {end}"))?;
+        let s: usize = start
+            .parse()
+            .map_err(|_| format!("invalid start line: {start}"))?;
+        let e: usize = end
+            .parse()
+            .map_err(|_| format!("invalid end line: {end}"))?;
         if s == 0 || e == 0 {
             return Err("line numbers are 1-based".to_string());
         }
@@ -34,7 +38,9 @@ fn parse_line_spec(spec: &str) -> Result<(usize, Option<usize>), String> {
         }
         Ok((s - 1, Some(e)))
     } else {
-        let n: usize = spec.parse().map_err(|_| format!("invalid line number: {spec}"))?;
+        let n: usize = spec
+            .parse()
+            .map_err(|_| format!("invalid line number: {spec}"))?;
         if n == 0 {
             return Err("line numbers are 1-based".to_string());
         }
@@ -75,14 +81,20 @@ fn show_log(storage: &StorageManager, ref_id: &str, reason: &str, lines: Option<
                         }
                         0
                     }
-                    Err(e) => { eprintln!("tkn: {e}"); 1 }
+                    Err(e) => {
+                        eprintln!("tkn: {e}");
+                        1
+                    }
                 }
             } else {
                 print!("{content}");
                 0
             }
         }
-        Err(e) => { eprintln!("tkn: failed to read log for {ref_id}: {e}"); 1 }
+        Err(e) => {
+            eprintln!("tkn: failed to read log for {ref_id}: {e}");
+            1
+        }
     }
 }
 
@@ -100,9 +112,7 @@ fn list_logs(storage: &StorageManager) -> i32 {
             println!("{}", "-".repeat(72));
             for entry in entries.iter().take(20) {
                 let saved = if entry.raw_bytes > 0 {
-                    let s = entry
-                        .raw_bytes
-                        .saturating_sub(entry.optimized_bytes);
+                    let s = entry.raw_bytes.saturating_sub(entry.optimized_bytes);
                     format!("{:.0}%", (s as f64 / entry.raw_bytes as f64) * 100.0)
                 } else {
                     "0%".to_string()
@@ -123,7 +133,10 @@ fn list_logs(storage: &StorageManager) -> i32 {
             }
             0
         }
-        Err(e) => { eprintln!("tkn: failed to list logs: {e}"); 1 }
+        Err(e) => {
+            eprintln!("tkn: failed to list logs: {e}");
+            1
+        }
     }
 }
 

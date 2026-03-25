@@ -1,0 +1,10 @@
+match = "helm template"
+
+[optimize]
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^---$",
+    "^# Source: ",
+]

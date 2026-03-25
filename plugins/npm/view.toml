@@ -1,4 +1,11 @@
 match = "npm view"
 
 [optimize]
+optimize_stderr = true
 max_lines = 50
+strip = [
+    "^\\s*$",
+    "^dist-tags:",
+    "^maintainers:",
+    "^published ",
+]

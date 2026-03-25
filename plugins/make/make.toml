@@ -1,6 +1,7 @@
 match = "make"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [

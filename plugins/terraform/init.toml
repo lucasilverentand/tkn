@@ -1,0 +1,21 @@
+match = "terraform init"
+
+[transform]
+add = ["-no-color"]
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^Initializing the backend",
+    "^Initializing modules",
+    "^Initializing provider plugins",
+    "^- Finding ",
+    "^- Installing ",
+    "^- Using previously-installed",
+    "^Terraform has been successfully initialized!",
+    "^You may now begin working",
+    "^If you ever set or change",
+]

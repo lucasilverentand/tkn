@@ -4,7 +4,7 @@ use std::io::Write;
 
 use chrono::Utc;
 
-use crate::types::{Analytics, LogEntry, normalize_tool};
+use crate::types::{normalize_tool, Analytics, LogEntry};
 
 use super::StorageManager;
 
@@ -33,7 +33,11 @@ impl StorageManager {
         analytics
     }
 
-    pub fn update_analytics_with_patterns(&self, entry: &LogEntry, patterns: &HashSet<String>) -> std::io::Result<()> {
+    pub fn update_analytics_with_patterns(
+        &self,
+        entry: &LogEntry,
+        patterns: &HashSet<String>,
+    ) -> std::io::Result<()> {
         let mut analytics = self.read_analytics();
 
         analytics.total_commands += 1;
@@ -61,7 +65,12 @@ impl StorageManager {
     }
 
     /// Record that a full log was read for a given command (signals optimizer may strip too much).
-    pub fn record_full_log_read(&self, command: &str, reason: &str, patterns: &HashSet<String>) -> std::io::Result<()> {
+    pub fn record_full_log_read(
+        &self,
+        command: &str,
+        reason: &str,
+        patterns: &HashSet<String>,
+    ) -> std::io::Result<()> {
         let mut analytics = self.read_analytics();
         let tool = normalize_tool(command, patterns);
         let tool_stats = analytics.tools.entry(tool.clone()).or_default();
@@ -105,17 +114,22 @@ impl StorageManager {
             return Ok(false);
         };
         analytics.total_commands = analytics.total_commands.saturating_sub(stats.count);
-        analytics.total_raw_bytes = analytics.total_raw_bytes.saturating_sub(stats.total_raw_bytes);
-        analytics.total_optimized_bytes = analytics.total_optimized_bytes.saturating_sub(stats.total_optimized_bytes);
-        analytics.total_estimated_raw_bytes = analytics.total_estimated_raw_bytes.saturating_sub(stats.total_estimated_raw_bytes);
+        analytics.total_raw_bytes = analytics
+            .total_raw_bytes
+            .saturating_sub(stats.total_raw_bytes);
+        analytics.total_optimized_bytes = analytics
+            .total_optimized_bytes
+            .saturating_sub(stats.total_optimized_bytes);
+        analytics.total_estimated_raw_bytes = analytics
+            .total_estimated_raw_bytes
+            .saturating_sub(stats.total_estimated_raw_bytes);
         self.write_analytics(&analytics)?;
         Ok(true)
     }
 
     pub fn write_analytics(&self, analytics: &Analytics) -> std::io::Result<()> {
         let path = self.analytics_path();
-        let json = serde_json::to_string_pretty(analytics)
-            .map_err(std::io::Error::other)?;
+        let json = serde_json::to_string_pretty(analytics).map_err(std::io::Error::other)?;
 
         // Atomic write via temp file + rename
         let tmp_path = path.with_extension("json.tmp");

@@ -1,6 +1,7 @@
 match = "git worktree"
 
 [optimize]
+optimize_stderr = true
 max_lines = 50
 strip = [
     "^hint:",

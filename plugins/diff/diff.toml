@@ -1,0 +1,11 @@
+match = "diff"
+
+[optimize]
+truncate = "middle"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^Only in ",
+    "^Binary files ",
+    "^Common subdirectories:",
+]

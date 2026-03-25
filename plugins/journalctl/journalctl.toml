@@ -1,0 +1,19 @@
+match = "journalctl"
+
+[transform]
+add = ["--no-pager", "-n 200|--lines|-n"]
+savings_factor = 3.0
+
+[optimize]
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^-- Boot ",
+    "^-- Journal begins",
+]
+
+# Strip verbose timestamp prefix, keep just HH:MM:SS
+[[optimize.replace]]
+pattern = "^\\w{3} \\d{2} (\\d{2}:\\d{2}:\\d{2}) \\S+ "
+replacement = "$1 "

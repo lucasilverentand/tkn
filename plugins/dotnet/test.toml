@@ -1,0 +1,13 @@
+match = "dotnet test"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\s*Determining projects to restore",
+    "^\\s*Restored ",
+    "^\\s*Starting test execution",
+    "^A total of \\d+ test files matched",
+]

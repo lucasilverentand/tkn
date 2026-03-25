@@ -1,9 +1,11 @@
 match = "npm test"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [
+    "^\\s*$",
     "^> .+@.+ ",            # lifecycle script header
     "^npm warn ",
     "^npm notice ",

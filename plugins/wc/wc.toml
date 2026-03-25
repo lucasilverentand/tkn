@@ -10,7 +10,3 @@ strip = [
 [[optimize.replace]]
 pattern = "^\\s+"
 replacement = ""
-
-[[optimize.replace]]
-pattern = "/(Users|home)/[^/]+/"
-replacement = "~/"

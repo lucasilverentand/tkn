@@ -1,0 +1,14 @@
+match = "yarn add"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "YN0013:",
+    "YN0000:.*Resolution step",
+    "YN0000:.*Fetch step",
+    "YN0000:.*Link step",
+    "YN0000:.*Completed in ",
+]

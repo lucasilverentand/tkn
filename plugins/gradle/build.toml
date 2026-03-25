@@ -1,0 +1,14 @@
+match = "gradle build"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+keep = [
+    "(?i)error[:\\[]",
+    "(?i)warning[:\\[]",
+    "BUILD SUCCESSFUL",
+    "BUILD FAILED",
+    "FAILURE:",
+    "^\\s+> ",
+]

@@ -63,8 +63,3 @@ replacement = "$1 "
 [[optimize.replace]]
 pattern = "[\\x{E000}-\\x{F8FF}]\\s?"
 replacement = ""
-
-# Shorten home directory paths to ~/
-[[optimize.replace]]
-pattern = "/(Users|home)/[^/]+/"
-replacement = "~/"

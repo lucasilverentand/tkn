@@ -1,8 +1,16 @@
 match = "docker compose"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 100
 strip = [
     "^\\s*$",
+    "^\\s*Container .+ (Creating|Created|Starting|Started|Stopping|Stopped|Removing|Removed)\\s*$",
+    "^\\s*Network .+ (Creating|Created|Removing|Removed)\\s*$",
+    "^\\s*Volume .+ (Creating|Created|Removing|Removed)\\s*$",
+    "^\\s*Pulling\\s",
+    "^\\s*Waiting\\s",
+    "^\\s*Extracting\\s",
+    "^\\[\\+\\] Running \\d+/\\d+$",
 ]

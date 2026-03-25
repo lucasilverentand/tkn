@@ -1,6 +1,7 @@
 match = "gh repo"
 
 [optimize]
+optimize_stderr = true
 max_lines = 150
 strip = [
     "^—+$",

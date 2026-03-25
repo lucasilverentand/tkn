@@ -1,0 +1,16 @@
+match = "terraform apply"
+
+[transform]
+add = ["-no-color"]
+savings_factor = 1.5
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+keep = [
+    "(?i)error",
+    "Apply complete!",
+    "^\\s*[+~-]\\s",
+    "Plan:",
+]

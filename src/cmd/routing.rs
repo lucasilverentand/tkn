@@ -112,28 +112,19 @@ const LONG_LIVED_EXACT: &[&str] = &[
 /// REPLs become short-lived script runners when given args (e.g. `python -m pytest`).
 const LONG_LIVED_BARE: &[&str] = &[
     // REPLs / interactive interpreters
-    "python",
-    "python3",
-    "node",
-    "irb",
-    "pry",
-    "ipython",
-    "iex",
-    "ghci",
-    "lua",
-    "erl",
+    "python", "python3", "node", "irb", "pry", "ipython", "iex", "ghci", "lua", "erl",
     // Editors (should never be captured)
-    "vim",
-    "nvim",
-    "vi",
-    "nano",
-    "emacs",
-    "micro",
-    "helix",
+    "vim", "nvim", "vi", "nano", "emacs", "micro", "helix",
 ];
 
 /// Flags that indicate a long-running / streaming mode.
-const LONG_LIVED_FLAGS: &[&str] = &["--watch", "--serve", "--live-reload", "--hot", "--interactive"];
+const LONG_LIVED_FLAGS: &[&str] = &[
+    "--watch",
+    "--serve",
+    "--live-reload",
+    "--hot",
+    "--interactive",
+];
 
 /// Command + flag combinations that indicate interactive use.
 const INTERACTIVE_PATTERNS: &[(&str, &str)] = &[

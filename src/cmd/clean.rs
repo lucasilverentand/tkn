@@ -43,5 +43,9 @@ pub fn run(logs_only: bool, stats_only: bool) -> i32 {
         println!("Stats cleared.");
     }
 
-    if failed { 1 } else { 0 }
+    if failed {
+        1
+    } else {
+        0
+    }
 }

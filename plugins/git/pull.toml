@@ -1,9 +1,11 @@
 match = "git pull"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 100
 strip = [
+    "^\\s*$",
     "^Enumerating objects:",
     "^Counting objects:",
     "^Compressing objects:",
@@ -14,4 +16,6 @@ strip = [
     "^remote: Total \\d+",
     "^Unpacking objects:",
     "^From .+$",
+    "^Receiving objects:",
+    "^Resolving deltas:",
 ]

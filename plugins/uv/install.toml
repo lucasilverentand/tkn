@@ -1,0 +1,13 @@
+match = "uv pip install"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 150
+strip = [
+    "^\\s*$",
+    "^Resolved \\d+ packages",
+    "^Prepared \\d+ packages",
+    "^\\s*Using ",
+    "^Updated ",
+]

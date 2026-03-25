@@ -1,10 +1,13 @@
 match = "deno test"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [
     "^\\s*$",
     "^running \\d+ tests?",
     "^test .+ \\.\\.\\. ok",
+    "^Check file://",
+    "^Download https://",
 ]

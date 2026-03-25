@@ -1,6 +1,7 @@
 match = "xcodebuild build"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 keep = [
@@ -8,4 +9,5 @@ keep = [
     "(?i)warning[:\\[]",
     "\\*\\* BUILD (SUCCEEDED|FAILED) \\*\\*",
     "^Build complete!",
+    "^\\s+\\^~*$",
 ]

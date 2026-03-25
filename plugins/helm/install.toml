@@ -1,0 +1,15 @@
+match = "helm install"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 150
+strip = [
+    "^\\s*$",
+    "^NAME: ",
+    "^LAST DEPLOYED:",
+    "^NAMESPACE:",
+    "^STATUS: deployed",
+    "^REVISION:",
+    "^TEST SUITE:",
+]

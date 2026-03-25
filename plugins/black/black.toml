@@ -1,0 +1,10 @@
+match = "black"
+
+[optimize]
+optimize_stderr = true
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^All done!",
+    "^Oh no!",
+]

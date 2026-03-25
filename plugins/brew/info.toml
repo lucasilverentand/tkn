@@ -1,0 +1,9 @@
+match = "brew info"
+
+[optimize]
+max_lines = 50
+strip = [
+    "^\\s*$",
+    "^==> Analytics",
+    "^==> Caveats",
+]

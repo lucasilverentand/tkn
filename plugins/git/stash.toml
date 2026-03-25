@@ -1,6 +1,7 @@
 match = "git stash"
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 strip = [
     # Usage help boilerplate

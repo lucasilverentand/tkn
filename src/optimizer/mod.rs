@@ -54,9 +54,7 @@ fn run_pipeline_inner(
         let line_limit = tool_config
             .and_then(|c| c.optimize.max_lines)
             .unwrap_or(MAX_OUTPUT_LINES);
-        let truncate_mode = tool_config
-            .map(|c| c.optimize.truncate)
-            .unwrap_or_default();
+        let truncate_mode = tool_config.map(|c| c.optimize.truncate).unwrap_or_default();
         let (truncated_content, line_truncated) =
             truncate_lines(&optimized, line_limit, truncate_mode);
         optimized = truncated_content;
@@ -114,11 +112,7 @@ fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
         return input.to_string();
     }
 
-    let keep_regexes: Vec<Regex> = opt
-        .keep
-        .iter()
-        .filter_map(|p| Regex::new(p).ok())
-        .collect();
+    let keep_regexes: Vec<Regex> = opt.keep.iter().filter_map(|p| Regex::new(p).ok()).collect();
 
     let strip_regexes: Vec<Regex> = opt
         .strip
@@ -129,7 +123,11 @@ fn apply_tool_filters(input: &str, config: &ToolConfig) -> String {
     let replace_regexes: Vec<(Regex, &str)> = opt
         .replace
         .iter()
-        .filter_map(|r| Regex::new(&r.pattern).ok().map(|re| (re, r.replacement.as_str())))
+        .filter_map(|r| {
+            Regex::new(&r.pattern)
+                .ok()
+                .map(|re| (re, r.replacement.as_str()))
+        })
         .collect();
 
     let filtered: Vec<String> = input
@@ -177,7 +175,8 @@ mod tests {
             ..Default::default()
         });
 
-        let input = "diff --git a/foo b/foo\nindex abc123..def456 100644\n--- a/foo\n+++ b/foo\n+new line";
+        let input =
+            "diff --git a/foo b/foo\nindex abc123..def456 100644\n--- a/foo\n+++ b/foo\n+new line";
         let result = apply_tool_filters(input, &config);
         assert!(!result.contains("diff --git"));
         assert!(!result.contains("index abc123"));
@@ -371,7 +370,10 @@ mod tests {
 
         let input = "total 48\ndrwxr-xr-x  5 luca  staff  160B Feb 16 14:30 src\n-rw-r--r--  1 luca  staff  2.3K Feb 16 14:30 Cargo.toml";
         let result = apply_tool_filters(input, &config);
-        assert_eq!(result, "160B Feb 16 14:30 src\n2.3K Feb 16 14:30 Cargo.toml");
+        assert_eq!(
+            result,
+            "160B Feb 16 14:30 src\n2.3K Feb 16 14:30 Cargo.toml"
+        );
     }
 
     #[test]

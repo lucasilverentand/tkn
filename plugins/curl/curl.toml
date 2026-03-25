@@ -5,6 +5,7 @@ add = ["-s|--silent|-S"]
 savings_factor = 1.5
 
 [optimize]
+optimize_stderr = true
 strip = [
     "^\\s*%",
     "^\\s*\\d+\\s+\\d+.*--:--:--",

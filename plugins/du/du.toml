@@ -1,8 +1,13 @@
 match = "du"
 
-[optimize]
-max_lines = 100
+[transform]
+add = ["-h|-k|-m|-g|--human-readable|--si|--block-size"]
 
-[[optimize.replace]]
-pattern = "/(Users|home)/[^/]+/"
-replacement = "~/"
+[optimize]
+optimize_stderr = true
+truncate = "top"
+max_lines = 100
+strip = [
+    "Permission denied",
+    "^\\s*$",
+]

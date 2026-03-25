@@ -53,10 +53,7 @@ mod tests {
 
     #[test]
     fn escapes_single_quotes_in_args() {
-        let args = vec![
-            "echo".to_string(),
-            "it's".to_string(),
-        ];
+        let args = vec!["echo".to_string(), "it's".to_string()];
         assert_eq!(args_to_shell_command(&args), "echo 'it'\\''s'");
     }
 }

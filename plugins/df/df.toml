@@ -1,0 +1,15 @@
+match = "df"
+
+[transform]
+add = ["-h|-k|-m|-g|--human-readable|--si|--block-size"]
+
+[optimize]
+max_lines = 50
+strip = [
+    "^\\s*$",
+]
+
+# Collapse multi-space column padding to single tab
+[[optimize.replace]]
+pattern = "  +"
+replacement = "\t"

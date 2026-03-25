@@ -67,9 +67,7 @@ pub fn transform_command(command: &str, config: &ToolConfig) -> String {
                 // flag argument (e.g. "-L 3", "--depth 2", "-n 20"). Skip past it
                 // so we don't insert new flags between a flag and its value.
                 let next = i + 1;
-                if next < parts.len()
-                    && parts[next].chars().all(|c| c.is_ascii_digit())
-                {
+                if next < parts.len() && parts[next].chars().all(|c| c.is_ascii_digit()) {
                     next + 1
                 } else {
                     next
@@ -124,13 +122,9 @@ fn shell_split(input: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tool_config::{TransformConfig, OptimizeConfig};
+    use crate::tool_config::{OptimizeConfig, TransformConfig};
 
-    fn make_config(
-        add: Vec<&str>,
-        remove: Vec<&str>,
-        replace: Vec<(&str, &str)>,
-    ) -> ToolConfig {
+    fn make_config(add: Vec<&str>, remove: Vec<&str>, replace: Vec<(&str, &str)>) -> ToolConfig {
         make_config_with_match("test", add, remove, replace)
     }
 
@@ -145,7 +139,10 @@ mod tests {
             transform: TransformConfig {
                 add: add.into_iter().map(String::from).collect(),
                 remove: remove.into_iter().map(String::from).collect(),
-                replace: replace.into_iter().map(|(k, v)| (k.into(), v.into())).collect(),
+                replace: replace
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
                 savings_factor: None,
             },
             optimize: OptimizeConfig::default(),
@@ -182,7 +179,12 @@ mod tests {
 
     #[test]
     fn test_replace_flag() {
-        let config = make_config_with_match("git diff", vec![], vec![], vec![("--color=auto", "--color=never")]);
+        let config = make_config_with_match(
+            "git diff",
+            vec![],
+            vec![],
+            vec![("--color=auto", "--color=never")],
+        );
         assert_eq!(
             transform_command("git diff --color=auto src/main.rs", &config),
             "git diff --color=never src/main.rs"
@@ -206,20 +208,14 @@ mod tests {
     #[test]
     fn test_no_transform_rules() {
         let config = make_config(vec![], vec![], vec![]);
-        assert_eq!(
-            transform_command("echo hello", &config),
-            "echo hello"
-        );
+        assert_eq!(transform_command("echo hello", &config), "echo hello");
     }
 
     #[test]
     fn test_add_flag_with_alias_already_present() {
         let config = make_config_with_match("git status", vec!["--short|-s"], vec![], vec![]);
         // -s is an alias for --short, so --short should not be added
-        assert_eq!(
-            transform_command("git status -s", &config),
-            "git status -s"
-        );
+        assert_eq!(transform_command("git status -s", &config), "git status -s");
     }
 
     #[test]
@@ -250,10 +246,7 @@ mod tests {
     fn test_add_detects_combined_short_flags() {
         // "-1|-l" should not add -1 when -l is inside combined "-la"
         let config = make_config_with_match("ls", vec!["-1|-l"], vec![], vec![]);
-        assert_eq!(
-            transform_command("ls -la /tmp", &config),
-            "ls -la /tmp"
-        );
+        assert_eq!(transform_command("ls -la /tmp", &config), "ls -la /tmp");
     }
 
     #[test]
@@ -261,38 +254,26 @@ mod tests {
         // "-1|-l" should add -1 when neither -1 nor -l is present
         // No existing flags — inserted after command prefix, before path arg
         let config = make_config_with_match("ls", vec!["-1|-l"], vec![], vec![]);
-        assert_eq!(
-            transform_command("ls /tmp", &config),
-            "ls -1 /tmp"
-        );
+        assert_eq!(transform_command("ls /tmp", &config), "ls -1 /tmp");
     }
 
     #[test]
     fn test_add_inserts_before_positional_args() {
         let config = make_config_with_match("ls", vec!["-h"], vec![], vec![]);
-        assert_eq!(
-            transform_command("ls -la /tmp", &config),
-            "ls -la -h /tmp"
-        );
+        assert_eq!(transform_command("ls -la /tmp", &config), "ls -la -h /tmp");
     }
 
     #[test]
     fn test_add_multiple_flags_after_last_flag() {
         // With existing flags, new flags inserted after last flag
         let config = make_config_with_match("ls", vec!["-1|-l", "-h"], vec![], vec![]);
-        assert_eq!(
-            transform_command("ls -a /tmp", &config),
-            "ls -a -1 -h /tmp"
-        );
+        assert_eq!(transform_command("ls -a /tmp", &config), "ls -a -1 -h /tmp");
     }
 
     #[test]
     fn test_add_flag_no_positional_args() {
         let config = make_config_with_match("ls", vec!["-h"], vec![], vec![]);
-        assert_eq!(
-            transform_command("ls -la", &config),
-            "ls -la -h"
-        );
+        assert_eq!(transform_command("ls -la", &config), "ls -la -h");
     }
 
     #[test]
@@ -310,7 +291,8 @@ mod tests {
     fn test_add_flag_skips_flag_value() {
         // Flags like -L that take a separate value argument should not be split.
         // "tree -L 1" + adding "--noreport" should NOT produce "tree -L --noreport 1"
-        let config = make_config_with_match("tree", vec!["--noreport", "-n|--no-color"], vec![], vec![]);
+        let config =
+            make_config_with_match("tree", vec!["--noreport", "-n|--no-color"], vec![], vec![]);
         assert_eq!(
             transform_command("tree -L 1", &config),
             "tree -L 1 --noreport -n"
@@ -331,9 +313,6 @@ mod tests {
     fn test_add_flag_command_only() {
         // No positional args, no existing flags — flags appended at end
         let config = make_config_with_match("ls", vec!["-1|-l", "-h"], vec![], vec![]);
-        assert_eq!(
-            transform_command("ls", &config),
-            "ls -1 -h"
-        );
+        assert_eq!(transform_command("ls", &config), "ls -1 -h");
     }
 }

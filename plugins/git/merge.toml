@@ -1,0 +1,11 @@
+match = "git merge"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^Auto-merging ",
+    "^Already up to date\\.",
+]

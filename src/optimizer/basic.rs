@@ -25,7 +25,11 @@ pub fn strip_ansi(input: &str, raw: bool) -> String {
             } else {
                 line
             };
-            if raw { l } else { l.trim_end() }
+            if raw {
+                l
+            } else {
+                l.trim_end()
+            }
         })
         .collect();
 
@@ -281,7 +285,10 @@ mod tests {
 
     #[test]
     fn test_shorten_paths_cwd() {
-        let cwd = std::env::current_dir().unwrap().to_string_lossy().to_string();
+        let cwd = std::env::current_dir()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let input = format!("{cwd}/src/main.rs:10: fn main()");
         let result = shorten_paths(&input);
         assert_eq!(result, "./src/main.rs:10: fn main()");

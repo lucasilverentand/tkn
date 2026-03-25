@@ -1,8 +1,13 @@
 match = "ps"
 
 [optimize]
+optimize_stderr = true
 max_lines = 100
+strip = [
+    "^\\s*$",
+]
 
+# Collapse multi-space column padding to single tab
 [[optimize.replace]]
-pattern = "/(Users|home)/[^/]+/"
-replacement = "~/"
+pattern = "  +"
+replacement = "\t"

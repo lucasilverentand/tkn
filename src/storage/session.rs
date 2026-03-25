@@ -22,8 +22,7 @@ impl StorageManager {
         let mut entries = self.read_session_entries()?;
         entries.push(entry.clone());
 
-        let json = serde_json::to_string_pretty(&entries)
-            .map_err(std::io::Error::other)?;
+        let json = serde_json::to_string_pretty(&entries).map_err(std::io::Error::other)?;
 
         let tmp_path = path.with_extension("json.tmp");
         let mut f = fs::File::create(&tmp_path)?;
@@ -40,7 +39,6 @@ impl StorageManager {
             return Ok(Vec::new());
         }
         let content = fs::read_to_string(&path)?;
-        serde_json::from_str(&content)
-            .map_err(std::io::Error::other)
+        serde_json::from_str(&content).map_err(std::io::Error::other)
     }
 }

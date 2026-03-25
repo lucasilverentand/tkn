@@ -1,0 +1,10 @@
+match = "flux reconcile"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^. waiting for ",
+]

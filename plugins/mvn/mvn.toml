@@ -1,0 +1,21 @@
+match = "mvn"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\[INFO\\] ---\\s",
+    "^\\[INFO\\] Scanning for projects",
+    "^\\[INFO\\] Building\\s",
+    "^\\[INFO\\] ---+$",
+    "^\\[INFO\\]\\s*$",
+    "^\\[INFO\\] Using ",
+    "^\\[INFO\\] skip ",
+    "^\\[INFO\\] Nothing to compile",
+    "^\\[INFO\\] Changes detected",
+    "^Downloading from ",
+    "^Downloaded from ",
+    "^Progress \\(\\d+\\):",
+]

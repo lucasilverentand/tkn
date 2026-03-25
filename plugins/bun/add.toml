@@ -1,9 +1,11 @@
 match = "bun add"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 150
 strip = [
+    "^\\s*$",
     "^Resolving\\.\\.\\.",
     "^Resolved,? ",
     "^Saved lockfile",

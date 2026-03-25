@@ -1,0 +1,16 @@
+match = "brew install"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^==> Downloading ",
+    "^==> Pouring ",
+    "^==> Fetching ",
+    "^Already downloaded:",
+    "^####+",
+    "^==> Satisfying dependencies",
+    "^==> Installing dependencies:",
+]

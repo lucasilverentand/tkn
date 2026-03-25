@@ -1,17 +1,13 @@
 match = "docker build"
 
+[transform]
+add = ["--progress=plain|--progress"]
+savings_factor = 5.0
+
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
-strip = [
-    "^#\\d+ \\[internal\\]",       # internal build steps
-    "^#\\d+ sha256:",
-    "^#\\d+ DONE ",
-    "^#\\d+ CACHED",
-    "^#\\d+ extracting ",
-    "^#\\d+ transferring ",
-    "^#\\d+ resolve ",
-]
 keep = [
     "(?i)error",
     "(?i)warning",

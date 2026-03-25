@@ -87,12 +87,32 @@ pub struct OptimizeConfig {
 pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
     vec![
         ("git", "git-diff", include_str!("../plugins/git/diff.toml")),
-        ("git", "git-status", include_str!("../plugins/git/status.toml")),
+        (
+            "git",
+            "git-status",
+            include_str!("../plugins/git/status.toml"),
+        ),
         ("git", "git-show", include_str!("../plugins/git/show.toml")),
-        ("cargo", "cargo-build", include_str!("../plugins/cargo/build.toml")),
-        ("cargo", "cargo-test", include_str!("../plugins/cargo/test.toml")),
-        ("cargo", "cargo-clippy", include_str!("../plugins/cargo/clippy.toml")),
-        ("cargo", "cargo-fmt", include_str!("../plugins/cargo/fmt.toml")),
+        (
+            "cargo",
+            "cargo-build",
+            include_str!("../plugins/cargo/build.toml"),
+        ),
+        (
+            "cargo",
+            "cargo-test",
+            include_str!("../plugins/cargo/test.toml"),
+        ),
+        (
+            "cargo",
+            "cargo-clippy",
+            include_str!("../plugins/cargo/clippy.toml"),
+        ),
+        (
+            "cargo",
+            "cargo-fmt",
+            include_str!("../plugins/cargo/fmt.toml"),
+        ),
         ("gh", "gh-issue", include_str!("../plugins/gh/issue.toml")),
         ("gh", "gh-pr", include_str!("../plugins/gh/pr.toml")),
         ("gh", "gh-repo", include_str!("../plugins/gh/repo.toml")),
@@ -103,76 +123,244 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("tree", "tree", include_str!("../plugins/tree/tree.toml")),
         ("ls", "ls", include_str!("../plugins/ls/ls.toml")),
         ("git", "git-log", include_str!("../plugins/git/log.toml")),
-        ("git", "git-commit", include_str!("../plugins/git/commit.toml")),
-        ("git", "git-stash", include_str!("../plugins/git/stash.toml")),
-        ("xcodebuild", "xcodebuild-test", include_str!("../plugins/xcodebuild/test.toml")),
-        ("xcodebuild", "xcodebuild-build", include_str!("../plugins/xcodebuild/build.toml")),
+        (
+            "git",
+            "git-commit",
+            include_str!("../plugins/git/commit.toml"),
+        ),
+        (
+            "git",
+            "git-stash",
+            include_str!("../plugins/git/stash.toml"),
+        ),
+        (
+            "xcodebuild",
+            "xcodebuild-test",
+            include_str!("../plugins/xcodebuild/test.toml"),
+        ),
+        (
+            "xcodebuild",
+            "xcodebuild-build",
+            include_str!("../plugins/xcodebuild/build.toml"),
+        ),
         ("bun", "bun-run", include_str!("../plugins/bun/run.toml")),
         ("bun", "bun-test", include_str!("../plugins/bun/test.toml")),
         ("bun", "bun-add", include_str!("../plugins/bun/add.toml")),
-        ("bun", "bun-build", include_str!("../plugins/bun/build.toml")),
-        ("bun", "bun-install", include_str!("../plugins/bun/install.toml")),
-        ("bun", "bun-remove", include_str!("../plugins/bun/remove.toml")),
-        ("cargo", "cargo-help", include_str!("../plugins/cargo/help.toml")),
+        (
+            "bun",
+            "bun-build",
+            include_str!("../plugins/bun/build.toml"),
+        ),
+        (
+            "bun",
+            "bun-install",
+            include_str!("../plugins/bun/install.toml"),
+        ),
+        (
+            "bun",
+            "bun-remove",
+            include_str!("../plugins/bun/remove.toml"),
+        ),
+        (
+            "cargo",
+            "cargo-help",
+            include_str!("../plugins/cargo/help.toml"),
+        ),
         ("grep", "grep", include_str!("../plugins/grep/grep.toml")),
         // npm
         ("npm", "npm-run", include_str!("../plugins/npm/run.toml")),
         ("npm", "npm-test", include_str!("../plugins/npm/test.toml")),
-        ("npm", "npm-install", include_str!("../plugins/npm/install.toml")),
+        (
+            "npm",
+            "npm-install",
+            include_str!("../plugins/npm/install.toml"),
+        ),
         ("npm", "npm-view", include_str!("../plugins/npm/view.toml")),
         // pnpm
-        ("pnpm", "pnpm-install", include_str!("../plugins/pnpm/install.toml")),
-        ("pnpm", "pnpm-list", include_str!("../plugins/pnpm/list.toml")),
-        ("pnpm", "pnpm-outdated", include_str!("../plugins/pnpm/outdated.toml")),
+        (
+            "pnpm",
+            "pnpm-install",
+            include_str!("../plugins/pnpm/install.toml"),
+        ),
+        (
+            "pnpm",
+            "pnpm-list",
+            include_str!("../plugins/pnpm/list.toml"),
+        ),
+        (
+            "pnpm",
+            "pnpm-outdated",
+            include_str!("../plugins/pnpm/outdated.toml"),
+        ),
         ("pnpm", "pnpm-run", include_str!("../plugins/pnpm/run.toml")),
         // python
-        ("pytest", "pytest", include_str!("../plugins/pytest/pytest.toml")),
-        ("ruff", "ruff-check", include_str!("../plugins/ruff/check.toml")),
-        ("ruff", "ruff-format", include_str!("../plugins/ruff/format.toml")),
-        ("pip", "pip-install", include_str!("../plugins/pip/install.toml")),
+        (
+            "pytest",
+            "pytest",
+            include_str!("../plugins/pytest/pytest.toml"),
+        ),
+        (
+            "ruff",
+            "ruff-check",
+            include_str!("../plugins/ruff/check.toml"),
+        ),
+        (
+            "ruff",
+            "ruff-format",
+            include_str!("../plugins/ruff/format.toml"),
+        ),
+        (
+            "pip",
+            "pip-install",
+            include_str!("../plugins/pip/install.toml"),
+        ),
         ("pip", "pip-list", include_str!("../plugins/pip/list.toml")),
         // go
         ("go", "go-test", include_str!("../plugins/go/test.toml")),
         ("go", "go-build", include_str!("../plugins/go/build.toml")),
         ("go", "go-vet", include_str!("../plugins/go/vet.toml")),
         // docker & kubectl
-        ("docker", "docker-ps", include_str!("../plugins/docker/ps.toml")),
-        ("docker", "docker-images", include_str!("../plugins/docker/images.toml")),
-        ("docker", "docker-logs", include_str!("../plugins/docker/logs.toml")),
-        ("docker", "docker-build", include_str!("../plugins/docker/build.toml")),
-        ("docker", "docker-compose", include_str!("../plugins/docker/compose.toml")),
-        ("docker", "docker-exec", include_str!("../plugins/docker/exec.toml")),
-        ("kubectl", "kubectl-get", include_str!("../plugins/kubectl/get.toml")),
-        ("kubectl", "kubectl-logs", include_str!("../plugins/kubectl/logs.toml")),
+        (
+            "docker",
+            "docker-ps",
+            include_str!("../plugins/docker/ps.toml"),
+        ),
+        (
+            "docker",
+            "docker-images",
+            include_str!("../plugins/docker/images.toml"),
+        ),
+        (
+            "docker",
+            "docker-logs",
+            include_str!("../plugins/docker/logs.toml"),
+        ),
+        (
+            "docker",
+            "docker-build",
+            include_str!("../plugins/docker/build.toml"),
+        ),
+        (
+            "docker",
+            "docker-compose",
+            include_str!("../plugins/docker/compose.toml"),
+        ),
+        (
+            "docker",
+            "docker-exec",
+            include_str!("../plugins/docker/exec.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-get",
+            include_str!("../plugins/kubectl/get.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-logs",
+            include_str!("../plugins/kubectl/logs.toml"),
+        ),
         // js/ts linters
         ("tsc", "tsc", include_str!("../plugins/tsc/tsc.toml")),
-        ("eslint", "eslint", include_str!("../plugins/eslint/eslint.toml")),
-        ("prettier", "prettier", include_str!("../plugins/prettier/prettier.toml")),
+        (
+            "eslint",
+            "eslint",
+            include_str!("../plugins/eslint/eslint.toml"),
+        ),
+        (
+            "prettier",
+            "prettier",
+            include_str!("../plugins/prettier/prettier.toml"),
+        ),
         // git subcommands
-        ("git", "git-branch", include_str!("../plugins/git/branch.toml")),
+        (
+            "git",
+            "git-branch",
+            include_str!("../plugins/git/branch.toml"),
+        ),
         ("git", "git-push", include_str!("../plugins/git/push.toml")),
         ("git", "git-pull", include_str!("../plugins/git/pull.toml")),
-        ("git", "git-fetch", include_str!("../plugins/git/fetch.toml")),
+        (
+            "git",
+            "git-fetch",
+            include_str!("../plugins/git/fetch.toml"),
+        ),
         ("git", "git-add", include_str!("../plugins/git/add.toml")),
-        ("git", "git-blame", include_str!("../plugins/git/blame.toml")),
-        ("git", "git-remote", include_str!("../plugins/git/remote.toml")),
-        ("git", "git-checkout", include_str!("../plugins/git/checkout.toml")),
+        (
+            "git",
+            "git-blame",
+            include_str!("../plugins/git/blame.toml"),
+        ),
+        (
+            "git",
+            "git-remote",
+            include_str!("../plugins/git/remote.toml"),
+        ),
+        (
+            "git",
+            "git-checkout",
+            include_str!("../plugins/git/checkout.toml"),
+        ),
         ("git", "git-rm", include_str!("../plugins/git/rm.toml")),
-        ("git", "git-worktree", include_str!("../plugins/git/worktree.toml")),
-        ("git", "git-ls-files", include_str!("../plugins/git/ls-files.toml")),
+        (
+            "git",
+            "git-worktree",
+            include_str!("../plugins/git/worktree.toml"),
+        ),
+        (
+            "git",
+            "git-ls-files",
+            include_str!("../plugins/git/ls-files.toml"),
+        ),
         // biome
-        ("biome", "biome-check", include_str!("../plugins/biome/check.toml")),
-        ("biome", "biome-format", include_str!("../plugins/biome/format.toml")),
-        ("biome", "biome-lint", include_str!("../plugins/biome/lint.toml")),
+        (
+            "biome",
+            "biome-check",
+            include_str!("../plugins/biome/check.toml"),
+        ),
+        (
+            "biome",
+            "biome-format",
+            include_str!("../plugins/biome/format.toml"),
+        ),
+        (
+            "biome",
+            "biome-lint",
+            include_str!("../plugins/biome/lint.toml"),
+        ),
         // swift
-        ("swift", "swift-build", include_str!("../plugins/swift/build.toml")),
-        ("swift", "swift-test", include_str!("../plugins/swift/test.toml")),
+        (
+            "swift",
+            "swift-build",
+            include_str!("../plugins/swift/build.toml"),
+        ),
+        (
+            "swift",
+            "swift-test",
+            include_str!("../plugins/swift/test.toml"),
+        ),
         // wrangler
-        ("wrangler", "wrangler-deploy", include_str!("../plugins/wrangler/deploy.toml")),
-        ("wrangler", "wrangler-publish", include_str!("../plugins/wrangler/publish.toml")),
+        (
+            "wrangler",
+            "wrangler-deploy",
+            include_str!("../plugins/wrangler/deploy.toml"),
+        ),
+        (
+            "wrangler",
+            "wrangler-publish",
+            include_str!("../plugins/wrangler/publish.toml"),
+        ),
         // deno
-        ("deno", "deno-test", include_str!("../plugins/deno/test.toml")),
-        ("deno", "deno-bench", include_str!("../plugins/deno/bench.toml")),
+        (
+            "deno",
+            "deno-test",
+            include_str!("../plugins/deno/test.toml"),
+        ),
+        (
+            "deno",
+            "deno-bench",
+            include_str!("../plugins/deno/bench.toml"),
+        ),
         // misc
         ("wget", "wget", include_str!("../plugins/wget/wget.toml")),
         ("make", "make", include_str!("../plugins/make/make.toml")),
@@ -187,6 +375,275 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
         ("sed", "sed", include_str!("../plugins/sed/sed.toml")),
         ("head", "head", include_str!("../plugins/head/head.toml")),
         ("tail", "tail", include_str!("../plugins/tail/tail.toml")),
+        // js test runners
+        ("jest", "jest", include_str!("../plugins/jest/jest.toml")),
+        (
+            "vitest",
+            "vitest",
+            include_str!("../plugins/vitest/vitest.toml"),
+        ),
+        // turbo
+        (
+            "turbo",
+            "turbo",
+            include_str!("../plugins/turbo/turbo.toml"),
+        ),
+        // brew
+        (
+            "brew",
+            "brew-install",
+            include_str!("../plugins/brew/install.toml"),
+        ),
+        (
+            "brew",
+            "brew-upgrade",
+            include_str!("../plugins/brew/upgrade.toml"),
+        ),
+        (
+            "brew",
+            "brew-info",
+            include_str!("../plugins/brew/info.toml"),
+        ),
+        // uv (python)
+        (
+            "uv",
+            "uv-pip-install",
+            include_str!("../plugins/uv/install.toml"),
+        ),
+        (
+            "uv",
+            "uv-sync",
+            include_str!("../plugins/uv/sync.toml"),
+        ),
+        ("uv", "uv-run", include_str!("../plugins/uv/run.toml")),
+        // helm
+        (
+            "helm",
+            "helm-install",
+            include_str!("../plugins/helm/install.toml"),
+        ),
+        (
+            "helm",
+            "helm-upgrade",
+            include_str!("../plugins/helm/upgrade.toml"),
+        ),
+        (
+            "helm",
+            "helm-list",
+            include_str!("../plugins/helm/list.toml"),
+        ),
+        (
+            "helm",
+            "helm-template",
+            include_str!("../plugins/helm/template.toml"),
+        ),
+        // terraform
+        (
+            "terraform",
+            "terraform-plan",
+            include_str!("../plugins/terraform/plan.toml"),
+        ),
+        (
+            "terraform",
+            "terraform-apply",
+            include_str!("../plugins/terraform/apply.toml"),
+        ),
+        (
+            "terraform",
+            "terraform-init",
+            include_str!("../plugins/terraform/init.toml"),
+        ),
+        // git subcommands (pass 3)
+        (
+            "git",
+            "git-merge",
+            include_str!("../plugins/git/merge.toml"),
+        ),
+        (
+            "git",
+            "git-rebase",
+            include_str!("../plugins/git/rebase.toml"),
+        ),
+        (
+            "git",
+            "git-cherry-pick",
+            include_str!("../plugins/git/cherry-pick.toml"),
+        ),
+        ("git", "git-tag", include_str!("../plugins/git/tag.toml")),
+        (
+            "git",
+            "git-submodule",
+            include_str!("../plugins/git/submodule.toml"),
+        ),
+        (
+            "git",
+            "git-reflog",
+            include_str!("../plugins/git/reflog.toml"),
+        ),
+        (
+            "git",
+            "git-clean",
+            include_str!("../plugins/git/clean.toml"),
+        ),
+        // docker/kubectl (pass 4)
+        (
+            "docker",
+            "docker-inspect",
+            include_str!("../plugins/docker/inspect.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-describe",
+            include_str!("../plugins/kubectl/describe.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-apply",
+            include_str!("../plugins/kubectl/apply.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-delete",
+            include_str!("../plugins/kubectl/delete.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-top",
+            include_str!("../plugins/kubectl/top.toml"),
+        ),
+        (
+            "kubectl",
+            "kubectl-rollout",
+            include_str!("../plugins/kubectl/rollout.toml"),
+        ),
+        ("diff", "diff", include_str!("../plugins/diff/diff.toml")),
+        (
+            "cargo",
+            "cargo-nextest",
+            include_str!("../plugins/cargo/nextest.toml"),
+        ),
+        // yarn
+        (
+            "yarn",
+            "yarn-install",
+            include_str!("../plugins/yarn/install.toml"),
+        ),
+        (
+            "yarn",
+            "yarn-add",
+            include_str!("../plugins/yarn/add.toml"),
+        ),
+        (
+            "yarn",
+            "yarn-run",
+            include_str!("../plugins/yarn/run.toml"),
+        ),
+        // vite
+        (
+            "vite",
+            "vite-build",
+            include_str!("../plugins/vite/build.toml"),
+        ),
+        // python tools
+        ("mypy", "mypy", include_str!("../plugins/mypy/mypy.toml")),
+        (
+            "black",
+            "black",
+            include_str!("../plugins/black/black.toml"),
+        ),
+        (
+            "poetry",
+            "poetry-install",
+            include_str!("../plugins/poetry/install.toml"),
+        ),
+        (
+            "poetry",
+            "poetry-add",
+            include_str!("../plugins/poetry/add.toml"),
+        ),
+        // system tools
+        ("df", "df", include_str!("../plugins/df/df.toml")),
+        ("lsof", "lsof", include_str!("../plugins/lsof/lsof.toml")),
+        ("dig", "dig", include_str!("../plugins/dig/dig.toml")),
+        ("tar", "tar", include_str!("../plugins/tar/tar.toml")),
+        (
+            "rsync",
+            "rsync",
+            include_str!("../plugins/rsync/rsync.toml"),
+        ),
+        (
+            "journalctl",
+            "journalctl",
+            include_str!("../plugins/journalctl/journalctl.toml"),
+        ),
+        (
+            "systemctl",
+            "systemctl",
+            include_str!("../plugins/systemctl/systemctl.toml"),
+        ),
+        // flux
+        (
+            "flux",
+            "flux-reconcile",
+            include_str!("../plugins/flux/reconcile.toml"),
+        ),
+        (
+            "flux",
+            "flux-get",
+            include_str!("../plugins/flux/get.toml"),
+        ),
+        // mise
+        (
+            "mise",
+            "mise-install",
+            include_str!("../plugins/mise/install.toml"),
+        ),
+        ("mise", "mise-ls", include_str!("../plugins/mise/ls.toml")),
+        // tofu (opentofu)
+        (
+            "tofu",
+            "tofu-plan",
+            include_str!("../plugins/tofu/plan.toml"),
+        ),
+        (
+            "tofu",
+            "tofu-apply",
+            include_str!("../plugins/tofu/apply.toml"),
+        ),
+        (
+            "tofu",
+            "tofu-init",
+            include_str!("../plugins/tofu/init.toml"),
+        ),
+        // gradle
+        (
+            "gradle",
+            "gradle-build",
+            include_str!("../plugins/gradle/build.toml"),
+        ),
+        (
+            "gradle",
+            "gradle-test",
+            include_str!("../plugins/gradle/test.toml"),
+        ),
+        // maven
+        ("mvn", "mvn", include_str!("../plugins/mvn/mvn.toml")),
+        // dotnet
+        (
+            "dotnet",
+            "dotnet-build",
+            include_str!("../plugins/dotnet/build.toml"),
+        ),
+        (
+            "dotnet",
+            "dotnet-test",
+            include_str!("../plugins/dotnet/test.toml"),
+        ),
+        (
+            "dotnet",
+            "dotnet-run",
+            include_str!("../plugins/dotnet/run.toml"),
+        ),
     ]
 }
 
@@ -287,7 +744,10 @@ pub fn load_tool_config(command: &str) -> Option<ToolConfig> {
     load_tool_config_with_patterns(command, &patterns)
 }
 
-pub fn load_tool_config_with_patterns(command: &str, patterns: &HashSet<String>) -> Option<ToolConfig> {
+pub fn load_tool_config_with_patterns(
+    command: &str,
+    patterns: &HashSet<String>,
+) -> Option<ToolConfig> {
     let tool_name = normalize_tool(command, patterns);
     let settings = load_settings();
 
@@ -366,7 +826,7 @@ mod tests {
     #[test]
     fn test_builtin_plugins_returns_all() {
         let plugins = builtin_plugins();
-        assert_eq!(plugins.len(), 87);
+        assert_eq!(plugins.len(), 146);
         let names: Vec<&str> = plugins.iter().map(|(_, n, _)| *n).collect();
         assert!(names.contains(&"git-diff"));
         assert!(names.contains(&"cargo-build"));
@@ -379,9 +839,9 @@ mod tests {
     fn test_builtin_plugins_have_bundles() {
         let plugins = builtin_plugins();
         let git_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "git").collect();
-        assert_eq!(git_plugins.len(), 17);
+        assert_eq!(git_plugins.len(), 24);
         let cargo_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "cargo").collect();
-        assert_eq!(cargo_plugins.len(), 5);
+        assert_eq!(cargo_plugins.len(), 6);
         let bun_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "bun").collect();
         assert_eq!(bun_plugins.len(), 6);
         let grep_plugins: Vec<_> = plugins.iter().filter(|(b, _, _)| *b == "grep").collect();

@@ -1,6 +1,7 @@
 match = "wrangler deploy"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 100
 strip = [

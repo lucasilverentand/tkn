@@ -1,0 +1,17 @@
+match = "kubectl describe"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\s*Tolerations:",
+    "^\\s*Normal\\s+Scheduled",
+    "^\\s*Normal\\s+Pulling\\s",
+    "^\\s*Normal\\s+Pulled\\s",
+    "^\\s*Normal\\s+Created\\s",
+    "^\\s*Normal\\s+Started\\s",
+    "^\\s*QoS Class:",
+    "^\\s*Node-Selectors:",
+]

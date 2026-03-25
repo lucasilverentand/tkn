@@ -9,17 +9,35 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
 
     if let Some(tool) = reset {
         return match storage.reset_tool_stats(tool) {
-            Ok(true) => { println!("Reset stats for \"{tool}\"."); 0 }
-            Ok(false) => { eprintln!("tkn: no stats found for \"{tool}\""); 1 }
-            Err(e) => { eprintln!("tkn: failed to reset stats: {e}"); 1 }
+            Ok(true) => {
+                println!("Reset stats for \"{tool}\".");
+                0
+            }
+            Ok(false) => {
+                eprintln!("tkn: no stats found for \"{tool}\"");
+                1
+            }
+            Err(e) => {
+                eprintln!("tkn: failed to reset stats: {e}");
+                1
+            }
         };
     }
 
     if let Some(tool) = reset_failures {
         return match storage.reset_tool_failures(tool) {
-            Ok(true) => { println!("Reset failures for \"{tool}\"."); 0 }
-            Ok(false) => { eprintln!("tkn: no stats found for \"{tool}\""); 1 }
-            Err(e) => { eprintln!("tkn: failed to reset failures: {e}"); 1 }
+            Ok(true) => {
+                println!("Reset failures for \"{tool}\".");
+                0
+            }
+            Ok(false) => {
+                eprintln!("tkn: no stats found for \"{tool}\"");
+                1
+            }
+            Err(e) => {
+                eprintln!("tkn: failed to reset failures: {e}");
+                1
+            }
         };
     }
 
@@ -33,7 +51,9 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
     println!("tkn analytics");
     println!("{}", "-".repeat(40));
     println!("Total commands:   {}", analytics.total_commands);
-    let effective_raw = analytics.total_estimated_raw_bytes.max(analytics.total_raw_bytes);
+    let effective_raw = analytics
+        .total_estimated_raw_bytes
+        .max(analytics.total_raw_bytes);
     println!(
         "Total raw bytes:  {} ({:.1} KB)",
         effective_raw,
@@ -56,16 +76,10 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
         analytics.total_duration_ms as f64 / analytics.total_commands as f64
     );
     if let Some(last) = analytics.last_updated {
-        println!(
-            "Last updated:     {}",
-            last.format("%Y-%m-%d %H:%M:%S UTC")
-        );
+        println!("Last updated:     {}", last.format("%Y-%m-%d %H:%M:%S UTC"));
     }
     if let Some(last) = analytics.last_cleanup {
-        println!(
-            "Last cleanup:     {}",
-            last.format("%Y-%m-%d %H:%M:%S UTC")
-        );
+        println!("Last cleanup:     {}", last.format("%Y-%m-%d %H:%M:%S UTC"));
     }
 
     if !analytics.tools.is_empty() {
@@ -124,7 +138,10 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
         for (main_cmd, entries) in &sorted_groups {
             let group_count: u64 = entries.iter().map(|(_, s)| s.count).sum();
             let group_raw: u64 = entries.iter().map(|(_, s)| s.total_raw_bytes).sum();
-            let group_est: u64 = entries.iter().map(|(_, s)| s.total_estimated_raw_bytes).sum();
+            let group_est: u64 = entries
+                .iter()
+                .map(|(_, s)| s.total_estimated_raw_bytes)
+                .sum();
             let group_effective = group_est.max(group_raw);
             let group_opt: u64 = entries.iter().map(|(_, s)| s.total_optimized_bytes).sum();
             let group_pct = if group_effective > 0 {
@@ -142,7 +159,10 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
             } else {
                 // Group header
                 let header_width = col - 2; // indent=2
-                println!("  {:<header_width$} {:>5}x  saved {:.0}%", main_cmd, group_count, group_pct);
+                println!(
+                    "  {:<header_width$} {:>5}x  saved {:.0}%",
+                    main_cmd, group_count, group_pct
+                );
                 let sub_width = col - 4; // indent=4
                 for (tool, stats) in entries {
                     print_tool_line(tool, stats, &patterns, "    ", sub_width);

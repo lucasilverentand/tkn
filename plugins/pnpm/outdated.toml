@@ -1,8 +1,14 @@
 match = "pnpm outdated"
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 strip = [
     "^\\s*$",
 ]
 max_lines = 100
+
+# Collapse multi-space column padding to single tab
+[[optimize.replace]]
+pattern = "  +"
+replacement = "\t"

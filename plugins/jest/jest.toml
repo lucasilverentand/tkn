@@ -1,0 +1,23 @@
+match = "jest"
+
+[transform]
+add = ["--no-color|--color", "--verbose=false|--verbose|-v"]
+savings_factor = 1.5
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\s*console\\.log",
+    "^\\s*at Object\\.",
+    "^\\s*at Module\\.",
+    "^\\s*at processTicksAndRejections",
+    "^PASS ",
+    "^Test Suites:.*\\d+ passed",
+    "^Tests:.*\\d+ passed",
+    "^Snapshots:",
+    "^Time:",
+    "^Ran all test suites",
+]

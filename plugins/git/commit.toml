@@ -1,6 +1,7 @@
 match = "git commit"
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 strip = [
     "^ (create|delete|copy) mode \\d+",

@@ -69,7 +69,6 @@ pub struct Analytics {
     pub total_estimated_raw_bytes: u64,
 }
 
-
 /// Commands that wrap/delegate to another command.
 /// Each entry: (name, flags_that_consume_next_arg, skip_positional_count).
 /// - flags_that_consume_next_arg: flags like `--sdk <val>` where the next word is a value
@@ -342,10 +341,22 @@ mod tests {
     /// Patterns matching the builtin plugins.
     fn default_patterns() -> HashSet<String> {
         patterns(&[
-            "git diff", "git log", "git status", "git show", "git blame",
-            "git branch", "git stash",
-            "cargo build", "cargo test", "cargo clippy",
-            "gh issue", "gh pr", "gh repo", "gh run", "gh workflow", "gh api",
+            "git diff",
+            "git log",
+            "git status",
+            "git show",
+            "git blame",
+            "git branch",
+            "git stash",
+            "cargo build",
+            "cargo test",
+            "cargo clippy",
+            "gh issue",
+            "gh pr",
+            "gh repo",
+            "gh run",
+            "gh workflow",
+            "gh api",
         ])
     }
 
@@ -442,7 +453,10 @@ mod tests {
         assert_eq!(normalize_tool("nice -n 10 cargo build", &p), "cargo build");
         assert_eq!(normalize_tool("nohup python3 server.py", &p), "python3");
         assert_eq!(normalize_tool("time cargo test", &p), "cargo test");
-        assert_eq!(normalize_tool("caffeinate cargo build --release", &p), "cargo build");
+        assert_eq!(
+            normalize_tool("caffeinate cargo build --release", &p),
+            "cargo build"
+        );
     }
 
     #[test]
@@ -452,10 +466,7 @@ mod tests {
             normalize_tool("script -q /tmp/st9.log xcodebuild test -scheme Foo", &p),
             "xcodebuild test"
         );
-        assert_eq!(
-            normalize_tool("script /tmp/log ls -la", &p),
-            "ls"
-        );
+        assert_eq!(normalize_tool("script /tmp/log ls -la", &p), "ls");
         assert_eq!(
             normalize_tool("script -q -a /tmp/log git diff", &p),
             "git diff"
@@ -464,9 +475,17 @@ mod tests {
 
     #[test]
     fn test_normalize_xcrun_wrapper() {
-        let p = patterns(&["xcresulttool get test-results", "xcresulttool get", "xcresulttool export", "xcodebuild build"]);
+        let p = patterns(&[
+            "xcresulttool get test-results",
+            "xcresulttool get",
+            "xcresulttool export",
+            "xcodebuild build",
+        ]);
         assert_eq!(
-            normalize_tool("xcrun xcresulttool get test-results summary --path /foo", &p),
+            normalize_tool(
+                "xcrun xcresulttool get test-results summary --path /foo",
+                &p
+            ),
             "xcresulttool get test-results"
         );
         assert_eq!(
@@ -494,7 +513,13 @@ mod tests {
 
     #[test]
     fn test_normalize_apple_toolchain() {
-        let p = patterns(&["xcodebuild test", "swift build", "swift package", "pod install", "flutter test"]);
+        let p = patterns(&[
+            "xcodebuild test",
+            "swift build",
+            "swift package",
+            "pod install",
+            "flutter test",
+        ]);
         assert_eq!(
             normalize_tool("xcodebuild test -scheme PentaPrism", &p),
             "xcodebuild test"
@@ -502,13 +527,19 @@ mod tests {
         assert_eq!(normalize_tool("swift build", &p), "swift build");
         assert_eq!(normalize_tool("swift package resolve", &p), "swift package");
         assert_eq!(normalize_tool("pod install", &p), "pod install");
-        assert_eq!(normalize_tool("flutter test --coverage", &p), "flutter test");
+        assert_eq!(
+            normalize_tool("flutter test --coverage", &p),
+            "flutter test"
+        );
     }
 
     #[test]
     fn test_normalize_build_tools() {
         let p = patterns(&["bazel build", "bazel test"]);
-        assert_eq!(normalize_tool("bazel build //src:target", &p), "bazel build");
+        assert_eq!(
+            normalize_tool("bazel build //src:target", &p),
+            "bazel build"
+        );
         assert_eq!(normalize_tool("bazel test //tests:all", &p), "bazel test");
     }
 
@@ -531,7 +562,10 @@ mod tests {
     fn test_normalize_unknown_fallback() {
         // Unknown tool with no matching pattern: base + first subcommand token
         let p = default_patterns();
-        assert_eq!(normalize_tool("terraform plan --var-file=prod", &p), "terraform plan");
+        assert_eq!(
+            normalize_tool("terraform plan --var-file=prod", &p),
+            "terraform plan"
+        );
         assert_eq!(normalize_tool("kubectl get pods", &p), "kubectl get");
         assert_eq!(normalize_tool("aws s3 cp file s3://bucket", &p), "aws s3");
     }
@@ -560,10 +594,7 @@ mod tests {
     #[test]
     fn test_normalize_timeout_wrapper() {
         let p = default_patterns();
-        assert_eq!(
-            normalize_tool("timeout 30 cargo test", &p),
-            "cargo test"
-        );
+        assert_eq!(normalize_tool("timeout 30 cargo test", &p), "cargo test");
         assert_eq!(
             normalize_tool("timeout --signal KILL 60 git status", &p),
             "git status"

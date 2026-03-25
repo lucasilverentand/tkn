@@ -1,0 +1,16 @@
+match = "systemctl"
+
+[transform]
+add = ["--no-pager"]
+
+[optimize]
+optimize_stderr = true
+max_lines = 100
+strip = [
+    "^\\s*$",
+]
+
+# Collapse multi-space column padding to single tab
+[[optimize.replace]]
+pattern = "  +"
+replacement = "\t"

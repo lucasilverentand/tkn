@@ -1,9 +1,11 @@
 match = "bun run"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [
+    "^\\s*$",
     # Turbo boilerplate
     "^• Packages in scope:",
     "^• Running .+ in \\d+ packages",

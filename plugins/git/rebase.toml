@@ -1,0 +1,11 @@
+match = "git rebase"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^Rebasing \\(\\d+/\\d+\\)",
+    "^Applying: ",
+]

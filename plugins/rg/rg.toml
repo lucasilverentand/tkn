@@ -5,8 +5,10 @@ add = [
     "--no-heading",
     "--color=never",
 ]
+savings_factor = 1.2
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 strip = [
     "^Binary file .* matches$",
@@ -14,8 +16,3 @@ strip = [
     "^\\s*$",
 ]
 max_lines = 75
-
-# Shorten home directory paths
-[[optimize.replace]]
-pattern = "/(Users|home)/[^/]+/"
-replacement = "~/"

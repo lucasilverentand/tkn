@@ -1,6 +1,10 @@
 match = "prettier"
 
+[transform]
+add = ["--no-color|--color"]
+
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 150
 strip = [

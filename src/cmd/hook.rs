@@ -188,8 +188,7 @@ fn read_settings(path: &PathBuf) -> serde_json::Value {
 }
 
 fn write_settings(path: &PathBuf, value: &serde_json::Value) -> std::io::Result<()> {
-    let json = serde_json::to_string_pretty(value)
-        .map_err(std::io::Error::other)?;
+    let json = serde_json::to_string_pretty(value).map_err(std::io::Error::other)?;
     fs::write(path, json)
 }
 

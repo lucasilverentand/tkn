@@ -1,0 +1,11 @@
+match = "vite build"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^vite v\\d",
+    "^. \\d+ modules transformed",
+]

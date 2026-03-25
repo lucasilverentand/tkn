@@ -1,0 +1,17 @@
+match = "turbo"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^• Packages in scope:",
+    "^• Running .+ in \\d+ packages",
+    "^• Remote caching ",
+    "^cache hit, replaying logs",
+    "^cache (miss|bypass), executing",
+    "^\\s*Tasks:\\s+\\d+",
+    "^\\s*Cached:\\s+\\d+",
+    "^\\s*Duration:",
+]

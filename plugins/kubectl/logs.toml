@@ -2,6 +2,7 @@ match = "kubectl logs"
 
 [transform]
 add = ["--tail=200|--tail|-c|--since"]
+savings_factor = 2.0
 
 [optimize]
 truncate = "bottom"

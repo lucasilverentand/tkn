@@ -1,0 +1,17 @@
+match = "vitest"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\s*✓",
+    "^\\s*↓",
+    "^\\s+Duration ",
+    "^\\s+Start at ",
+    "^stdout \\| ",
+    "^\\s*Test Files\\s+\\d+ passed",
+    "^\\s*Tests\\s+\\d+ passed",
+    "^RUN\\s",
+]

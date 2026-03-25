@@ -1,6 +1,7 @@
 match = "git push"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 50
 strip = [

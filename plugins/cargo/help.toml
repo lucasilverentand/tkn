@@ -1,5 +1,6 @@
 match = "cargo help"
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 max_lines = 50

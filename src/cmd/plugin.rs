@@ -78,7 +78,10 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
     match status {
         Ok(s) if s.success() => {}
         Ok(s) => {
-            eprintln!("error: git clone failed with exit code {}", s.code().unwrap_or(-1));
+            eprintln!(
+                "error: git clone failed with exit code {}",
+                s.code().unwrap_or(-1)
+            );
             return 1;
         }
         Err(e) => {
@@ -122,7 +125,9 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
                                         manifest.plugins.push(PluginEntry {
                                             name: name.clone(),
                                             bundle: bundle.clone(),
-                                            source: PluginSource::Git { url: url.to_string() },
+                                            source: PluginSource::Git {
+                                                url: url.to_string(),
+                                            },
                                             installed_at: Utc::now(),
                                         });
                                     }
@@ -152,7 +157,9 @@ fn install_from_git(url: &str, storage: &StorageManager, manifest: &mut PluginMa
                             manifest.plugins.push(PluginEntry {
                                 name: name.to_string(),
                                 bundle,
-                                source: PluginSource::Git { url: url.to_string() },
+                                source: PluginSource::Git {
+                                    url: url.to_string(),
+                                },
                                 installed_at: Utc::now(),
                             });
                         }
@@ -188,8 +195,14 @@ pub fn list() {
 
     // Show built-in bundles
     for (bundle, names) in &builtin_bundles {
-        let any_installed = names.iter().any(|n| tools_dir.join(format!("{n}.toml")).exists());
-        let status = if any_installed { "installed" } else { "built-in" };
+        let any_installed = names
+            .iter()
+            .any(|n| tools_dir.join(format!("{n}.toml")).exists());
+        let status = if any_installed {
+            "installed"
+        } else {
+            "built-in"
+        };
         println!("  {bundle} ({status})");
 
         let short_names: Vec<&str> = names

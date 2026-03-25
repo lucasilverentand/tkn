@@ -2,10 +2,12 @@ match = "git diff"
 
 [transform]
 add = ["--no-color|--color|--color=never|--color=always|--color=auto"]
+savings_factor = 3.0
 
 [optimize]
 truncate = "bottom"
 strip = [
+    "^\\s*$",
     "^diff --git ",
     "^index [a-f0-9]",
     "^(old|new) mode ",

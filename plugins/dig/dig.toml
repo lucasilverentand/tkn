@@ -1,0 +1,18 @@
+match = "dig"
+
+[optimize]
+max_lines = 50
+strip = [
+    "^\\s*$",
+    "^; <<>>",
+    "^;; global options:",
+    "^;; Got answer:",
+    "^;; ->>HEADER",
+    "^;; flags:",
+    "^;; OPT PSEUDOSECTION:",
+    "^; EDNS:",
+    "^;; Query time:",
+    "^;; SERVER:",
+    "^;; WHEN:",
+    "^;; MSG SIZE",
+]

@@ -1,0 +1,13 @@
+match = "git submodule"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 100
+strip = [
+    "^\\s*$",
+    "^Cloning into ",
+    "^remote: (Enumerating|Counting|Compressing|Total) ",
+    "^Receiving objects:",
+    "^Resolving deltas:",
+]

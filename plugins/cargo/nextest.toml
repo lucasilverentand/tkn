@@ -1,0 +1,13 @@
+match = "cargo nextest"
+
+[optimize]
+optimize_stderr = true
+truncate = "bottom"
+max_lines = 200
+strip = [
+    "^\\s*$",
+    "^\\s*PASS ",
+    "^\\s*Starting \\d+ tests",
+    "^\\s*Compiling\\s",
+    "^\\s*Finished\\s",
+]

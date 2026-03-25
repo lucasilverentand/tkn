@@ -1,6 +1,7 @@
 match = "xcodebuild test"
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 keep = [
@@ -15,4 +16,5 @@ keep = [
     "(?i)error:",
     "(?i)failed",
     "^Testing started",
+    "^\\s+\\^~*$",
 ]

@@ -1,5 +1,13 @@
 match = "git blame"
 
+[transform]
+add = ["--no-color|--color|--color=never|--color=always|--color=auto"]
+
 [optimize]
 truncate = "top"
 max_lines = 200
+
+# Shorten 40-char commit hashes to 8 chars
+[[optimize.replace]]
+pattern = "([a-f0-9]{8})[a-f0-9]{32}"
+replacement = "$1"

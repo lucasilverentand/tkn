@@ -1,10 +1,11 @@
 match = "pytest"
 
 [transform]
-add = ["--tb=short|--tb", "-q|--quiet|-v|--verbose"]
+add = ["--tb=short|--tb", "-q|--quiet|-v|--verbose", "--color=no|--color"]
 savings_factor = 2.0
 
 [optimize]
+optimize_stderr = true
 truncate = "bottom"
 max_lines = 200
 strip = [

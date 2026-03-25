@@ -2,8 +2,10 @@ match = "grep"
 
 [transform]
 add = ["--color=never|--color|--color=auto|--color=always"]
+savings_factor = 1.2
 
 [optimize]
+optimize_stderr = true
 truncate = "top"
 strip = [
     "^Binary file .* matches$",
@@ -12,8 +14,3 @@ strip = [
     "^\\s*$",
 ]
 max_lines = 50
-
-# Strip absolute home directory prefix from file paths
-[[optimize.replace]]
-pattern = "/(Users|home)/[^/]+/"
-replacement = "~/"

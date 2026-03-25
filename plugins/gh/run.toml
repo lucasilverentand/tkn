@@ -1,6 +1,7 @@
 match = "gh run"
 
 [optimize]
+optimize_stderr = true
 max_lines = 150
 strip = [
     "^—+$",
