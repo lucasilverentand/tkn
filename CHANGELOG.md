@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/lucasilverentand/tkn/compare/v0.1.0...v0.2.0) (2026-03-25)
+
+
+### Features
+
+* Expand plugin system to 146 plugins across 62 tool bundles ([637d8ce](https://github.com/lucasilverentand/tkn/commit/637d8ce1bf532cee654c43a63ea7e43791896251))
+
 ## 0.1.0 (2026-03-24)
 
 
