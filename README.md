@@ -61,22 +61,63 @@ cd tkn
 cargo install --path . --locked
 ```
 
-## Setup
+## Assistant setup
 
-### Claude Code (automatic hook)
-
-tkn integrates with Claude Code as a PreToolUse hook that automatically intercepts Bash commands:
+Start with a health check:
 
 ```sh
-tkn hook install
+tkn doctor
 ```
 
-This registers tkn in `~/.claude/settings.json`. Every Bash tool call Claude makes will be routed through tkn automatically.
+This verifies local `~/.tkn` storage, built-in plugin availability, Claude hook state, and Codex repo bootstrap state.
+
+### Claude Code (machine-level hook)
+
+Claude uses a PreToolUse hook in `~/.claude/settings.json`:
+
+```sh
+tkn setup claude
+```
+
+This initializes `~/.tkn/` if needed and installs or repairs the `tkn hook run` entry for both Bash and Zsh.
+
+To verify or repair later:
+
+```sh
+tkn doctor claude
+tkn setup claude
+```
 
 To remove the hook:
 
 ```sh
 tkn hook uninstall
+```
+
+### Codex (repo bootstrap, not a global hook)
+
+Codex support is repo-based rather than hook-based. `tkn` manages a Codex block inside the target repo's `AGENTS.md`:
+
+```sh
+tkn setup codex --repo /path/to/repo
+```
+
+This creates or updates a managed section that tells Codex to default to:
+
+- `tkn auto -- <command>`
+- `tkn exec -- <command>` for deterministic captured output
+- `tkn pass -- <command>` for interactive, long-lived, or streaming commands
+
+To verify that a repo still has the current managed block:
+
+```sh
+tkn doctor codex --repo /path/to/repo
+```
+
+### Repair everything
+
+```sh
+tkn setup all --repo /path/to/repo
 ```
 
 ### Manual usage
@@ -129,7 +170,9 @@ Each plugin defines flag transforms (adding `--no-pager`, removing `--color=alwa
 | `tkn replay <id>` | Replay a stored command through the current optimizer |
 | `tkn reasons` | Show trends in full log read reasons |
 | `tkn clean` | Clear stats and logs |
-| `tkn hook install` | Install the Claude Code hook |
+| `tkn setup <claude\|codex\|all>` | Install or repair assistant integration |
+| `tkn doctor [claude\|codex\|all] [--json]` | Verify tkn, Claude, and Codex setup |
+| `tkn hook install` | Install the Claude Code hook directly |
 | `tkn hook uninstall` | Remove the Claude Code hook |
 
 ## Writing plugins
@@ -151,6 +194,12 @@ truncate = "tail"            # Keep the end when truncating
 ```
 
 Place custom plugins in `~/.tkn/tools/` to override or extend built-ins.
+
+## Troubleshooting
+
+- Run `tkn doctor` after install or upgrade to catch missing hooks, stale `AGENTS.md` blocks, or local permission problems.
+- If Claude is misconfigured, rerun `tkn setup claude`.
+- If Codex stops using `tkn` in a repo, rerun `tkn setup codex --repo /path/to/repo`.
 
 ## License
 

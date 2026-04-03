@@ -1,4 +1,5 @@
 mod cmd;
+mod integration;
 mod optimizer;
 mod runner;
 mod shell;
@@ -7,7 +8,9 @@ mod tool_config;
 mod transformer;
 mod types;
 
-use clap::{Parser, Subcommand};
+use std::path::PathBuf;
+
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 #[command(
@@ -60,6 +63,25 @@ enum Commands {
     Hook {
         #[command(subcommand)]
         action: HookAction,
+    },
+    /// Install or repair assistant integrations
+    Setup {
+        #[arg(value_enum)]
+        target: AssistantTarget,
+        /// Repository path for Codex AGENTS.md bootstrap
+        #[arg(long)]
+        repo: Option<PathBuf>,
+    },
+    /// Verify assistant integrations and local tkn health
+    Doctor {
+        #[arg(value_enum)]
+        target: Option<AssistantTarget>,
+        /// Repository path for Codex AGENTS.md verification
+        #[arg(long)]
+        repo: Option<PathBuf>,
+        /// Emit machine-readable JSON output
+        #[arg(long)]
+        json: bool,
     },
     /// Clear stats and logs
     Clean {
@@ -122,12 +144,19 @@ enum HookAction {
     Install,
     /// Uninstall the Claude Code hook
     Uninstall,
-    /// Run the hook (reads stdin, rewrites command, writes stdout)
+    /// Run the Claude Code hook (reads stdin, rewrites command, writes stdout)
     Run {
         /// Extra arguments (ignored, passed by Claude Code)
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
         _args: Vec<String>,
     },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+enum AssistantTarget {
+    Claude,
+    Codex,
+    All,
 }
 
 fn main() {
@@ -152,6 +181,10 @@ fn main() {
                 0
             }
         },
+        Commands::Setup { target, repo } => cmd::setup::run(target, repo.as_deref()),
+        Commands::Doctor { target, repo, json } => {
+            cmd::doctor::run(target, repo.as_deref(), json)
+        }
         Commands::Clean { logs, stats } => cmd::clean::run(logs, stats),
         Commands::Analyze { action } => match action {
             AnalyzeAction::Scan => cmd::analyze::scan(),

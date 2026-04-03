@@ -46,3 +46,8 @@ else
 fi
 
 echo "Installed tkn to ${INSTALL_DIR}/tkn"
+echo
+echo "Next steps:"
+echo "  tkn doctor"
+echo "  tkn setup claude"
+echo "  tkn setup codex --repo /path/to/repo"

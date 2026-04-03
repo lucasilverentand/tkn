@@ -1,6 +1,7 @@
 pub mod analyze;
 pub mod auto;
 pub mod clean;
+pub mod doctor;
 pub mod exec;
 pub mod hook;
 pub mod logs;
@@ -9,4 +10,5 @@ pub mod plugin;
 pub mod reasons;
 pub mod replay;
 pub mod routing;
+pub mod setup;
 pub mod stats;

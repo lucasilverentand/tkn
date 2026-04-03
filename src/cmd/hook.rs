@@ -1,8 +1,13 @@
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use crate::storage::StorageManager;
 
 use super::routing;
+
+pub const TKN_HOOK_COMMAND: &str = "tkn hook run";
+const TKN_MATCHERS: [&str; 2] = ["Bash", "Zsh"];
 
 /// Runs as the hook itself: reads stdin JSON, rewrites the command, writes to stdout.
 pub fn run() {
@@ -44,84 +49,75 @@ pub fn run() {
 }
 
 pub fn install() -> i32 {
-    let claude_dir = match dirs::home_dir() {
-        Some(h) => h.join(".claude"),
+    let storage = StorageManager::new();
+    if let Err(e) = storage.init() {
+        eprintln!("tkn: failed to initialize storage: {e}");
+        return 1;
+    }
+
+    let home_dir = match dirs::home_dir() {
+        Some(home_dir) => home_dir,
         None => {
             eprintln!("tkn: cannot determine home directory");
             return 1;
         }
     };
 
-    // Update settings.json
-    let settings_path = claude_dir.join("settings.json");
-    let mut settings = read_settings(&settings_path);
-
-    let Some(settings_obj) = settings.as_object_mut() else {
-        eprintln!("tkn: settings.json is not a JSON object");
-        return 1;
-    };
-
-    let hooks = settings_obj
-        .entry("hooks")
-        .or_insert_with(|| serde_json::json!({}));
-
-    let Some(hooks_obj) = hooks.as_object_mut() else {
-        eprintln!("tkn: settings.json 'hooks' is not an object");
-        return 1;
-    };
-
-    let pre_tool_use = hooks_obj
-        .entry("PreToolUse")
-        .or_insert_with(|| serde_json::json!([]));
-
-    let Some(arr) = pre_tool_use.as_array_mut() else {
-        eprintln!("tkn: settings.json 'PreToolUse' is not an array");
-        return 1;
-    };
-    for matcher in ["Bash", "Zsh"] {
-        if !arr
-            .iter()
-            .any(|entry| is_tkn_hook_for_matcher(entry, matcher))
-        {
-            arr.push(hook_entry(matcher));
+    match install_for_home(&home_dir) {
+        Ok(settings_path) => {
+            println!("tkn hook installed successfully.");
+            println!("  Settings: {}", settings_path.display());
+            0
+        }
+        Err(e) => {
+            eprintln!("tkn: {e}");
+            1
         }
     }
+}
 
-    if let Err(e) = write_settings(&settings_path, &settings) {
-        eprintln!("tkn: failed to update settings: {e}");
-        return 1;
-    }
+pub fn install_for_home(home_dir: &Path) -> Result<PathBuf, String> {
+    let claude_dir = claude_dir(home_dir);
+    fs::create_dir_all(&claude_dir)
+        .map_err(|e| format!("failed to create {}: {e}", claude_dir.display()))?;
 
-    // Clean up legacy hook script if present
+    let settings_path = claude_settings_path(home_dir);
+    let mut settings = read_settings(&settings_path)?;
+    repair_hook_settings(&mut settings)?;
+    write_settings(&settings_path, &settings)
+        .map_err(|e| format!("failed to update settings: {e}"))?;
+
     let legacy_script = claude_dir.join("hooks").join("tkn-hook.sh");
     if legacy_script.exists() {
         let _ = fs::remove_file(&legacy_script);
     }
 
-    println!("tkn hook installed successfully.");
-    println!("  Settings: {}", settings_path.display());
-    0
+    Ok(settings_path)
 }
 
 pub fn uninstall() -> i32 {
-    let claude_dir = match dirs::home_dir() {
-        Some(h) => h.join(".claude"),
+    let home_dir = match dirs::home_dir() {
+        Some(home_dir) => home_dir,
         None => {
             eprintln!("tkn: cannot determine home directory");
             return 1;
         }
     };
 
-    // Clean up legacy hook script if present
-    let legacy_script = claude_dir.join("hooks").join("tkn-hook.sh");
+    let legacy_script = claude_dir(&home_dir).join("hooks").join("tkn-hook.sh");
     if legacy_script.exists() {
         let _ = fs::remove_file(&legacy_script);
     }
 
-    // Remove from settings.json
-    let settings_path = claude_dir.join("settings.json");
+    let settings_path = claude_settings_path(&home_dir);
     if settings_path.exists() {
-        let mut settings = read_settings(&settings_path);
+        let mut settings = match read_settings(&settings_path) {
+            Ok(settings) => settings,
+            Err(e) => {
+                eprintln!("tkn: {e}");
+                return 1;
+            }
+        };
 
         if let Some(hooks) = settings.get_mut("hooks") {
             if let Some(pre_tool_use) = hooks.get_mut("PreToolUse") {
@@ -141,29 +137,113 @@ pub fn uninstall() -> i32 {
     0
 }
 
-/// Check if a hook entry is a tkn hook (matches both legacy shell script and new `tkn hook run`)
-fn is_tkn_hook(entry: &serde_json::Value) -> bool {
+pub fn claude_dir(home_dir: &Path) -> PathBuf {
+    home_dir.join(".claude")
+}
+
+pub fn claude_settings_path(home_dir: &Path) -> PathBuf {
+    claude_dir(home_dir).join("settings.json")
+}
+
+pub fn read_settings(path: &Path) -> Result<serde_json::Value, String> {
+    if path.exists() {
+        let content = fs::read_to_string(path)
+            .map_err(|e| format!("failed to read {}: {e}", path.display()))?;
+        serde_json::from_str(&content).map_err(|e| format!("invalid JSON in {}: {e}", path.display()))
+    } else {
+        Ok(serde_json::json!({}))
+    }
+}
+
+pub fn repair_hook_settings(settings: &mut serde_json::Value) -> Result<(), String> {
+    let Some(settings_obj) = settings.as_object_mut() else {
+        return Err("settings.json is not a JSON object".to_string());
+    };
+
+    let hooks = settings_obj
+        .entry("hooks")
+        .or_insert_with(|| serde_json::json!({}));
+
+    let Some(hooks_obj) = hooks.as_object_mut() else {
+        return Err("settings.json 'hooks' is not an object".to_string());
+    };
+
+    let pre_tool_use = hooks_obj
+        .entry("PreToolUse")
+        .or_insert_with(|| serde_json::json!([]));
+
+    let Some(arr) = pre_tool_use.as_array_mut() else {
+        return Err("settings.json 'PreToolUse' is not an array".to_string());
+    };
+
+    arr.retain(|entry| !is_tkn_hook(entry));
+    for matcher in TKN_MATCHERS {
+        arr.push(hook_entry(matcher));
+    }
+
+    Ok(())
+}
+
+pub fn hook_entries_for_matcher<'a>(
+    settings: &'a serde_json::Value,
+    matcher: &str,
+) -> Vec<&'a serde_json::Value> {
+    settings
+        .get("hooks")
+        .and_then(|hooks| hooks.get("PreToolUse"))
+        .and_then(|pre_tool_use| pre_tool_use.as_array())
+        .map(|entries| {
+            entries
+                .iter()
+                .filter(|entry| entry.get("matcher").and_then(|value| value.as_str()) == Some(matcher))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+pub fn has_expected_hook_command(entry: &serde_json::Value) -> bool {
     entry
         .get("hooks")
-        .and_then(|h| h.as_array())
+        .and_then(|hooks| hooks.as_array())
         .map(|hooks| {
-            hooks.iter().any(|h| {
-                h.get("command")
-                    .and_then(|c| c.as_str())
-                    .map(|c| c.contains("tkn"))
+            hooks.iter().any(|hook| {
+                hook.get("command")
+                    .and_then(|command| command.as_str())
+                    .map(|command| command == TKN_HOOK_COMMAND)
                     .unwrap_or(false)
             })
         })
         .unwrap_or(false)
 }
 
-fn is_tkn_hook_for_matcher(entry: &serde_json::Value, matcher: &str) -> bool {
+pub fn contains_legacy_hook(entry: &serde_json::Value) -> bool {
     entry
-        .get("matcher")
-        .and_then(|m| m.as_str())
-        .map(|m| m == matcher)
+        .get("hooks")
+        .and_then(|hooks| hooks.as_array())
+        .map(|hooks| {
+            hooks.iter().any(|hook| {
+                hook.get("command")
+                    .and_then(|command| command.as_str())
+                    .map(|command| command.contains("tkn") && command != TKN_HOOK_COMMAND)
+                    .unwrap_or(false)
+            })
+        })
         .unwrap_or(false)
-        && is_tkn_hook(entry)
+}
+
+pub fn is_tkn_hook(entry: &serde_json::Value) -> bool {
+    entry
+        .get("hooks")
+        .and_then(|hooks| hooks.as_array())
+        .map(|hooks| {
+            hooks.iter().any(|hook| {
+                hook.get("command")
+                    .and_then(|command| command.as_str())
+                    .map(|command| command.contains("tkn"))
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false)
 }
 
 fn hook_entry(matcher: &str) -> serde_json::Value {
@@ -171,33 +251,73 @@ fn hook_entry(matcher: &str) -> serde_json::Value {
         "matcher": matcher,
         "hooks": [{
             "type": "command",
-            "command": "tkn hook run"
+            "command": TKN_HOOK_COMMAND
         }]
     })
 }
 
-fn read_settings(path: &PathBuf) -> serde_json::Value {
-    if path.exists() {
-        fs::read_to_string(path)
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_else(|| serde_json::json!({}))
-    } else {
-        serde_json::json!({})
-    }
-}
-
-fn write_settings(path: &PathBuf, value: &serde_json::Value) -> std::io::Result<()> {
+fn write_settings(path: &Path, value: &serde_json::Value) -> std::io::Result<()> {
     let json = serde_json::to_string_pretty(value).map_err(std::io::Error::other)?;
     fs::write(path, json)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::run;
+    use std::env;
+
+    use super::*;
 
     #[test]
     fn run_is_noop_on_invalid_input() {
         run();
+    }
+
+    #[test]
+    fn install_for_home_repairs_duplicate_and_legacy_entries() {
+        let home = env::temp_dir().join(format!("tkn-hook-home-{}", uuid::Uuid::new_v4()));
+        let settings_path = claude_settings_path(&home);
+        fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
+        fs::write(
+            &settings_path,
+            serde_json::json!({
+                "hooks": {
+                    "PreToolUse": [
+                        {
+                            "matcher": "Bash",
+                            "hooks": [{"type": "command", "command": "tkn hook run"}]
+                        },
+                        {
+                            "matcher": "Bash",
+                            "hooks": [{"type": "command", "command": "~/.claude/hooks/tkn-hook.sh"}]
+                        }
+                    ]
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        install_for_home(&home).unwrap();
+        let settings = read_settings(&settings_path).unwrap();
+        assert_eq!(hook_entries_for_matcher(&settings, "Bash").len(), 1);
+        assert_eq!(hook_entries_for_matcher(&settings, "Zsh").len(), 1);
+        assert!(has_expected_hook_command(
+            hook_entries_for_matcher(&settings, "Bash")[0]
+        ));
+
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn read_settings_rejects_invalid_json() {
+        let home = env::temp_dir().join(format!("tkn-hook-invalid-{}", uuid::Uuid::new_v4()));
+        let settings_path = claude_settings_path(&home);
+        fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
+        fs::write(&settings_path, "{invalid").unwrap();
+
+        let err = read_settings(&settings_path).unwrap_err();
+        assert!(err.contains("invalid JSON"));
+
+        let _ = fs::remove_dir_all(home);
     }
 }
