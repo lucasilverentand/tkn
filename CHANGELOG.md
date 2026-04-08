@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/lucasilverentand/tkn/compare/v0.3.0...v0.4.0) (2026-04-08)
+
+
+### Features
+
+* add diagnose skill for analyzing full-log read patterns ([6d624ef](https://github.com/lucasilverentand/tkn/commit/6d624ef9ad60332b28ace71771c6d388514cf2f2))
+* add setup and doctor flows for Claude and Codex ([4eacdf7](https://github.com/lucasilverentand/tkn/commit/4eacdf7782f03de41ba93f2415b72d22185b991e))
+
+
+### Bug Fixes
+
+* preserve GitHub URLs in gh pr and set nl to raw mode ([b0769db](https://github.com/lucasilverentand/tkn/commit/b0769db099138029624fff383b9e52719459ae82))
+
 ## [0.3.0](https://github.com/lucasilverentand/tkn/compare/v0.2.0...v0.3.0) (2026-03-26)
 
 
