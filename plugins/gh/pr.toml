@@ -2,12 +2,11 @@ match = "gh pr"
 
 [optimize]
 optimize_stderr = true
-max_lines = 100
+max_lines = 200
 strip = [
     "^—+$",
     "^-+$",
     "^View this pull request on GitHub:",
-    "^https://github\\.com/",
     "^No description provided\\.",
     "^\\s+$",
     "https://github\\.com/.*/runs/\\d+",

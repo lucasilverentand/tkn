@@ -997,7 +997,7 @@ Checks passing";
         !result.contains("View this pull request"),
         "should strip view link"
     );
-    assert!(!result.contains("https://github.com"), "should strip URL");
+    assert!(result.contains("https://github.com"), "should preserve URL");
     assert!(
         !result.contains("No description provided"),
         "should strip empty desc"

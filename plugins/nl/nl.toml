@@ -1,5 +1,4 @@
 match = "nl"
 
 [optimize]
-truncate = "bottom"
-max_lines = 300
+raw = true
