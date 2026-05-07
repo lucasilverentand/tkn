@@ -1,6 +1,6 @@
 [package]
 name = "tkn"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2021"
 description = "Shell proxy for token-optimized AI tool output"
 license = "MIT"
