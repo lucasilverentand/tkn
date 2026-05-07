@@ -2,7 +2,10 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use crate::cmd::setup;
+use crate::integration::{content_without_codex_block, resolve_setup_repo_path};
 use crate::storage::StorageManager;
+use crate::AssistantTarget;
 
 use super::routing;
 
@@ -23,25 +26,44 @@ pub fn run(codex: bool) {
     }
 }
 
-pub fn install() -> i32 {
-    let storage = StorageManager::new();
-    if let Err(e) = storage.init() {
-        eprintln!("tkn: failed to initialize storage: {e}");
-        return 1;
-    }
+pub fn install(target: AssistantTarget, repo: Option<&Path>) -> i32 {
+    match target {
+        AssistantTarget::Claude => install_claude(),
+        AssistantTarget::Codex => install_codex(repo),
+        AssistantTarget::All => {
+            let claude_result = install_claude_result();
+            let codex_result = install_codex_result(repo);
 
-    let home_dir = match dirs::home_dir() {
-        Some(home_dir) => home_dir,
-        None => {
-            eprintln!("tkn: cannot determine home directory");
-            return 1;
+            match (&claude_result, &codex_result) {
+                (Ok(claude_path), Ok(codex_paths)) => {
+                    print_claude_install_success(claude_path);
+                    print_codex_install_success(codex_paths);
+                    0
+                }
+                (Ok(claude_path), Err(err)) => {
+                    print_claude_install_success(claude_path);
+                    eprintln!("tkn: Claude hook installed, Codex hook failed: {err}");
+                    1
+                }
+                (Err(err), Ok(codex_paths)) => {
+                    print_codex_install_success(codex_paths);
+                    eprintln!("tkn: Codex hook installed, Claude hook failed: {err}");
+                    1
+                }
+                (Err(claude_err), Err(codex_err)) => {
+                    eprintln!("tkn: Claude hook failed: {claude_err}");
+                    eprintln!("tkn: Codex hook failed: {codex_err}");
+                    1
+                }
+            }
         }
-    };
+    }
+}
 
-    match install_for_home(&home_dir) {
+fn install_claude() -> i32 {
+    match install_claude_result() {
         Ok(settings_path) => {
-            println!("tkn hook installed successfully.");
-            println!("  Settings: {}", settings_path.display());
+            print_claude_install_success(&settings_path);
             0
         }
         Err(e) => {
@@ -49,6 +71,46 @@ pub fn install() -> i32 {
             1
         }
     }
+}
+
+fn install_claude_result() -> Result<PathBuf, String> {
+    let storage = StorageManager::new();
+    storage
+        .init()
+        .map_err(|e| format!("failed to initialize storage: {e}"))?;
+
+    let home_dir = dirs::home_dir().ok_or_else(|| "cannot determine home directory".to_string())?;
+    install_for_home(&home_dir)
+}
+
+fn install_codex(repo: Option<&Path>) -> i32 {
+    match install_codex_result(repo) {
+        Ok(paths) => {
+            print_codex_install_success(&paths);
+            0
+        }
+        Err(e) => {
+            eprintln!("tkn: {e}");
+            1
+        }
+    }
+}
+
+fn install_codex_result(repo: Option<&Path>) -> Result<setup::CodexSetupPaths, String> {
+    let repo_path = resolve_setup_repo_path(repo)?;
+    setup::setup_codex_repo(&repo_path)
+}
+
+fn print_claude_install_success(settings_path: &Path) {
+    println!("tkn Claude hook installed successfully.");
+    println!("  Settings: {}", settings_path.display());
+}
+
+fn print_codex_install_success(paths: &setup::CodexSetupPaths) {
+    println!("tkn Codex hook installed successfully.");
+    println!("  Config: {}", paths.config_path.display());
+    println!("  Hooks: {}", paths.hooks_path.display());
+    println!("  AGENTS: {}", paths.agents_path.display());
 }
 
 pub fn install_for_home(home_dir: &Path) -> Result<PathBuf, String> {
@@ -70,12 +132,58 @@ pub fn install_for_home(home_dir: &Path) -> Result<PathBuf, String> {
     Ok(settings_path)
 }
 
-pub fn uninstall() -> i32 {
+pub fn uninstall(target: AssistantTarget, repo: Option<&Path>) -> i32 {
+    match target {
+        AssistantTarget::Claude => uninstall_claude(),
+        AssistantTarget::Codex => uninstall_codex(repo),
+        AssistantTarget::All => {
+            let claude_result = uninstall_claude_result();
+            let codex_result = uninstall_codex_result(repo);
+
+            match (&claude_result, &codex_result) {
+                (Ok(_), Ok(codex_path)) => {
+                    print_claude_uninstall_success();
+                    print_codex_uninstall_success(codex_path);
+                    0
+                }
+                (Ok(_), Err(err)) => {
+                    print_claude_uninstall_success();
+                    eprintln!("tkn: Claude hook removed, Codex hook failed: {err}");
+                    1
+                }
+                (Err(err), Ok(codex_path)) => {
+                    print_codex_uninstall_success(codex_path);
+                    eprintln!("tkn: Codex hook removed, Claude hook failed: {err}");
+                    1
+                }
+                (Err(claude_err), Err(codex_err)) => {
+                    eprintln!("tkn: Claude hook failed: {claude_err}");
+                    eprintln!("tkn: Codex hook failed: {codex_err}");
+                    1
+                }
+            }
+        }
+    }
+}
+
+fn uninstall_claude() -> i32 {
+    match uninstall_claude_result() {
+        Ok(_) => {
+            print_claude_uninstall_success();
+            0
+        }
+        Err(e) => {
+            eprintln!("tkn: {e}");
+            1
+        }
+    }
+}
+
+fn uninstall_claude_result() -> Result<(), String> {
     let home_dir = match dirs::home_dir() {
         Some(home_dir) => home_dir,
         None => {
-            eprintln!("tkn: cannot determine home directory");
-            return 1;
+            return Err("cannot determine home directory".to_string());
         }
     };
 
@@ -89,8 +197,7 @@ pub fn uninstall() -> i32 {
         let mut settings = match read_settings(&settings_path) {
             Ok(settings) => settings,
             Err(e) => {
-                eprintln!("tkn: {e}");
-                return 1;
+                return Err(e);
             }
         };
 
@@ -103,13 +210,65 @@ pub fn uninstall() -> i32 {
         }
 
         if let Err(e) = write_settings(&settings_path, &settings) {
-            eprintln!("tkn: failed to update settings: {e}");
-            return 1;
+            return Err(format!("failed to update settings: {e}"));
         }
     }
 
-    println!("tkn hook uninstalled successfully.");
-    0
+    Ok(())
+}
+
+fn uninstall_codex(repo: Option<&Path>) -> i32 {
+    match uninstall_codex_result(repo) {
+        Ok(hooks_path) => {
+            print_codex_uninstall_success(&hooks_path);
+            0
+        }
+        Err(e) => {
+            eprintln!("tkn: {e}");
+            1
+        }
+    }
+}
+
+fn uninstall_codex_result(repo: Option<&Path>) -> Result<PathBuf, String> {
+    let repo_path = resolve_setup_repo_path(repo)?;
+    let hooks_path = codex_hooks_path(&repo_path);
+    if hooks_path.exists() {
+        let mut settings = read_settings(&hooks_path)?;
+
+        if let Some(hooks) = settings.get_mut("hooks") {
+            if let Some(pre_tool_use) = hooks.get_mut("PreToolUse") {
+                if let Some(arr) = pre_tool_use.as_array_mut() {
+                    arr.retain(|entry| !is_tkn_hook(entry));
+                }
+            }
+        }
+
+        write_settings(&hooks_path, &settings)
+            .map_err(|e| format!("failed to update {}: {e}", hooks_path.display()))?;
+    }
+
+    let agents_path = repo_path.join("AGENTS.md");
+    if agents_path.exists() {
+        let existing = fs::read_to_string(&agents_path)
+            .map_err(|e| format!("failed to read {}: {e}", agents_path.display()))?;
+        let updated = content_without_codex_block(&existing);
+        if updated != existing {
+            fs::write(&agents_path, updated)
+                .map_err(|e| format!("failed to update {}: {e}", agents_path.display()))?;
+        }
+    }
+
+    Ok(hooks_path)
+}
+
+fn print_claude_uninstall_success() {
+    println!("tkn Claude hook uninstalled successfully.");
+}
+
+fn print_codex_uninstall_success(hooks_path: &Path) {
+    println!("tkn Codex hook uninstalled successfully.");
+    println!("  Hooks: {}", hooks_path.display());
 }
 
 pub fn claude_dir(home_dir: &Path) -> PathBuf {
@@ -369,6 +528,8 @@ fn codex_pretooluse_response(command: &str) -> serde_json::Value {
 mod tests {
     use std::env;
 
+    use crate::integration::CODEX_BEGIN_MARKER;
+
     use super::*;
 
     #[test]
@@ -465,6 +626,22 @@ mod tests {
         let entries = codex_hook_entries_for_matcher(&settings, TKN_CODEX_MATCHER);
         assert_eq!(entries.len(), 1);
         assert!(has_expected_codex_hook_command(entries[0]));
+    }
+
+    #[test]
+    fn uninstall_codex_removes_tkn_hook_entries() {
+        let repo =
+            env::temp_dir().join(format!("tkn-hook-codex-uninstall-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        setup::setup_codex_repo(&repo).unwrap();
+
+        let hooks_path = uninstall_codex_result(Some(&repo)).unwrap();
+        let settings = read_settings(&hooks_path).unwrap();
+        assert!(codex_hook_entries_for_matcher(&settings, TKN_CODEX_MATCHER).is_empty());
+        let agents = fs::read_to_string(repo.join("AGENTS.md")).unwrap();
+        assert!(!agents.contains(CODEX_BEGIN_MARKER));
+
+        let _ = fs::remove_dir_all(repo);
     }
 
     #[test]
