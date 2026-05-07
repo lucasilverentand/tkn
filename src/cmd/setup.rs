@@ -62,14 +62,22 @@ fn setup_claude() -> Result<(), String> {
 
 fn setup_codex(repo: Option<&Path>) -> Result<(), String> {
     let repo_path = resolve_setup_repo_path(repo)?;
-    let agents_path = setup_codex_repo(&repo_path)?;
+    let paths = setup_codex_repo(&repo_path)?;
     println!("Codex setup: ready");
-    println!("  AGENTS: {}", agents_path.display());
+    println!("  Config: {}", paths.config_path.display());
+    println!("  Hooks: {}", paths.hooks_path.display());
+    println!("  AGENTS: {}", paths.agents_path.display());
     println!("  Next: tkn doctor codex --repo {}", repo_path.display());
     Ok(())
 }
 
-pub(crate) fn setup_codex_repo(repo_path: &Path) -> Result<PathBuf, String> {
+pub(crate) struct CodexSetupPaths {
+    pub agents_path: PathBuf,
+    pub config_path: PathBuf,
+    pub hooks_path: PathBuf,
+}
+
+pub(crate) fn setup_codex_repo(repo_path: &Path) -> Result<CodexSetupPaths, String> {
     let agents_path = repo_path.join("AGENTS.md");
     let existing = if agents_path.exists() {
         fs::read_to_string(&agents_path)
@@ -84,7 +92,97 @@ pub(crate) fn setup_codex_repo(repo_path: &Path) -> Result<PathBuf, String> {
     fs::write(&agents_path, updated)
         .map_err(|e| format!("failed to write {}: {e}", agents_path.display()))?;
 
-    Ok(agents_path)
+    let config_path = hook::codex_config_path(repo_path);
+    ensure_parent_dir(&config_path)
+        .map_err(|e| format!("failed to prepare {}: {e}", config_path.display()))?;
+    ensure_codex_hooks_feature(&config_path)?;
+
+    let hooks_path = hook::codex_hooks_path(repo_path);
+    let mut hooks = hook::read_settings(&hooks_path)?;
+    hook::repair_codex_hook_settings(&mut hooks)?;
+    hook::write_settings(&hooks_path, &hooks)
+        .map_err(|e| format!("failed to write {}: {e}", hooks_path.display()))?;
+
+    Ok(CodexSetupPaths {
+        agents_path,
+        config_path,
+        hooks_path,
+    })
+}
+
+fn ensure_codex_hooks_feature(config_path: &Path) -> Result<(), String> {
+    let existing = if config_path.exists() {
+        fs::read_to_string(config_path)
+            .map_err(|e| format!("failed to read {}: {e}", config_path.display()))?
+    } else {
+        String::new()
+    };
+
+    if !existing.trim().is_empty() {
+        toml::from_str::<toml::Value>(&existing)
+            .map_err(|e| format!("invalid TOML in {}: {e}", config_path.display()))?;
+    }
+
+    let updated = upsert_codex_hooks_feature(&existing);
+    fs::write(config_path, updated)
+        .map_err(|e| format!("failed to write {}: {e}", config_path.display()))
+}
+
+fn upsert_codex_hooks_feature(existing: &str) -> String {
+    let normalized = existing.replace("\r\n", "\n");
+    let lines: Vec<&str> = normalized.lines().collect();
+
+    let mut in_features = false;
+    let mut features_start = None;
+    let mut features_end = lines.len();
+    let mut codex_hooks_line = None;
+
+    for (idx, line) in lines.iter().enumerate() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            if in_features {
+                features_end = idx;
+                break;
+            }
+            if trimmed == "[features]" {
+                in_features = true;
+                features_start = Some(idx);
+            }
+            continue;
+        }
+
+        if in_features {
+            let key = trimmed.split('=').next().map(str::trim).unwrap_or("");
+            if key == "codex_hooks" {
+                codex_hooks_line = Some(idx);
+            }
+        }
+    }
+
+    if features_start.is_none() {
+        let trimmed = normalized.trim_end_matches('\n');
+        if trimmed.is_empty() {
+            return "[features]\ncodex_hooks = true\n".to_string();
+        }
+        return format!("{trimmed}\n\n[features]\ncodex_hooks = true\n");
+    }
+
+    let mut output = Vec::with_capacity(lines.len() + 1);
+    let insert_at = features_end;
+    for (idx, line) in lines.iter().enumerate() {
+        if Some(idx) == codex_hooks_line {
+            output.push("codex_hooks = true".to_string());
+        } else {
+            output.push((*line).to_string());
+        }
+        if codex_hooks_line.is_none() && idx + 1 == insert_at {
+            output.push("codex_hooks = true".to_string());
+        }
+    }
+
+    let mut joined = output.join("\n");
+    joined.push('\n');
+    joined
 }
 
 #[cfg(test)]
@@ -101,17 +199,20 @@ mod tests {
         let repo = env::temp_dir().join(format!("tkn-setup-codex-create-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(repo.join(".git")).unwrap();
 
-        let agents_path = setup_codex_repo(&repo).unwrap();
-        let content = fs::read_to_string(agents_path).unwrap();
+        let paths = setup_codex_repo(&repo).unwrap();
+        let content = fs::read_to_string(paths.agents_path).unwrap();
         assert!(content.contains(CODEX_BEGIN_MARKER));
         assert!(codex_block_matches_current(&content));
+        assert!(paths.config_path.exists());
+        assert!(paths.hooks_path.exists());
 
         let _ = fs::remove_dir_all(repo);
     }
 
     #[test]
     fn setup_codex_repo_preserves_existing_user_content() {
-        let repo = env::temp_dir().join(format!("tkn-setup-codex-preserve-{}", uuid::Uuid::new_v4()));
+        let repo =
+            env::temp_dir().join(format!("tkn-setup-codex-preserve-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(repo.join(".git")).unwrap();
         let agents_path = repo.join("AGENTS.md");
         fs::write(&agents_path, "# Notes\n\nKeep this.\n").unwrap();
@@ -145,15 +246,40 @@ mod tests {
 
     #[test]
     fn setup_codex_repo_is_idempotent() {
-        let repo = env::temp_dir().join(format!("tkn-setup-codex-idempotent-{}", uuid::Uuid::new_v4()));
+        let repo = env::temp_dir().join(format!(
+            "tkn-setup-codex-idempotent-{}",
+            uuid::Uuid::new_v4()
+        ));
         fs::create_dir_all(repo.join(".git")).unwrap();
 
         let first = setup_codex_repo(&repo).unwrap();
-        let first_content = fs::read_to_string(&first).unwrap();
+        let first_content = fs::read_to_string(&first.agents_path).unwrap();
         setup_codex_repo(&repo).unwrap();
-        let second_content = fs::read_to_string(&first).unwrap();
+        let second_content = fs::read_to_string(&first.agents_path).unwrap();
 
         assert_eq!(first_content, second_content);
+
+        let _ = fs::remove_dir_all(repo);
+    }
+
+    #[test]
+    fn setup_codex_repo_preserves_config_and_enables_hooks() {
+        let repo = env::temp_dir().join(format!("tkn-setup-codex-config-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        let config_path = hook::codex_config_path(&repo);
+        fs::create_dir_all(config_path.parent().unwrap()).unwrap();
+        fs::write(
+            &config_path,
+            "[features]\napps = true\n\n[tools]\nweb_search = true\n",
+        )
+        .unwrap();
+
+        setup_codex_repo(&repo).unwrap();
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("[features]"));
+        assert!(content.contains("apps = true"));
+        assert!(content.contains("codex_hooks = true"));
+        assert!(content.contains("[tools]\nweb_search = true"));
 
         let _ = fs::remove_dir_all(repo);
     }

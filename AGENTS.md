@@ -59,6 +59,8 @@ Loading priority:
 
 `tkn hook install` registers in `~/.claude/settings.json` as a PreToolUse hook. `tkn hook run` reads the hook JSON from stdin, rewrites commands to `tkn auto -- <original command>`, and outputs a JSON response.
 
+Codex uses repo-local `.codex/config.toml` and `.codex/hooks.json`. `tkn hook run --codex` reads Codex PreToolUse JSON from stdin and blocks bare Bash commands with instructions to rerun through `tkn`, because Codex parses but does not currently support `updatedInput` rewrites for PreToolUse.
+
 ## Important Notes
 
 - Prefer built-in plugins in `plugins/` and do not rely on stale user overrides in `~/.tkn/tools/` when validating behavior.

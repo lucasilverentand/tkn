@@ -16,7 +16,11 @@ pub fn run(target: Option<AssistantTarget>, repo: Option<&Path>, json: bool) -> 
         render_human(&report);
     }
 
-    if report.has_failures() { 1 } else { 0 }
+    if report.has_failures() {
+        1
+    } else {
+        0
+    }
 }
 
 fn build_report(target: AssistantTarget, repo: Option<&Path>) -> DoctorReport {
@@ -57,7 +61,10 @@ fn doctor_core() -> TargetReport {
     }
 
     checks.push(check_dir_writable("logs directory", &storage.logs_dir()));
-    checks.push(check_dir_writable("plugins directory", &storage.tools_dir()));
+    checks.push(check_dir_writable(
+        "plugins directory",
+        &storage.tools_dir(),
+    ));
     checks.push(check_builtin_registry());
 
     TargetReport {
@@ -169,6 +176,9 @@ fn doctor_codex_for_repo(
         }
     };
 
+    checks.push(check_codex_config(&repo_path));
+    checks.push(check_codex_hook(&repo_path));
+
     let agents_path = repo_path.join("AGENTS.md");
     if !agents_path.exists() {
         checks.push(CheckResult::fail(
@@ -176,51 +186,42 @@ fn doctor_codex_for_repo(
             format!("{} does not exist", agents_path.display()),
             format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
         ));
-        return TargetReport {
-            target: "codex".to_string(),
-            checks,
-        };
-    }
-
-    let agents_content = match fs::read_to_string(&agents_path) {
-        Ok(content) => content,
-        Err(e) => {
-            checks.push(CheckResult::fail(
-                "AGENTS.md",
-                format!("failed to read {}: {e}", agents_path.display()),
-                format!("Check permissions for {}.", agents_path.display()),
+    } else if let Ok(agents_content) = fs::read_to_string(&agents_path) {
+        if integration::codex_block_matches_current(&agents_content) {
+            checks.push(CheckResult::pass(
+                "Codex managed block",
+                "managed tkn block is current",
             ));
-            return TargetReport {
-                target: "codex".to_string(),
-                checks,
-            };
+        } else {
+            checks.push(CheckResult::fail(
+                "Codex managed block",
+                "managed tkn block is missing or stale",
+                format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            ));
         }
-    };
 
-    if integration::codex_block_matches_current(&agents_content) {
-        checks.push(CheckResult::pass(
-            "Codex managed block",
-            "managed tkn block is current",
-        ));
+        let contradictory = integration::contradictory_codex_lines(&agents_content);
+        if contradictory.is_empty() {
+            checks.push(CheckResult::pass(
+                "Contradictory instructions",
+                "no obvious bare command examples found outside the managed block",
+            ));
+        } else {
+            checks.push(CheckResult::warn(
+                "Contradictory instructions",
+                format!(
+                    "found {} possible bare command examples",
+                    contradictory.len()
+                ),
+                "Review AGENTS.md and route assistant-facing shell examples through tkn.",
+            ));
+        }
     } else {
+        let err = fs::read_to_string(&agents_path).unwrap_err();
         checks.push(CheckResult::fail(
-            "Codex managed block",
-            "managed tkn block is missing or stale",
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
-        ));
-    }
-
-    let contradictory = integration::contradictory_codex_lines(&agents_content);
-    if contradictory.is_empty() {
-        checks.push(CheckResult::pass(
-            "Contradictory instructions",
-            "no obvious bare command examples found outside the managed block",
-        ));
-    } else {
-        checks.push(CheckResult::warn(
-            "Contradictory instructions",
-            format!("found {} possible bare command examples", contradictory.len()),
-            "Review AGENTS.md and route assistant-facing shell examples through tkn.",
+            "AGENTS.md",
+            format!("failed to read {}: {err}", agents_path.display()),
+            format!("Check permissions for {}.", agents_path.display()),
         ));
     }
 
@@ -228,6 +229,111 @@ fn doctor_codex_for_repo(
         target: "codex".to_string(),
         checks,
     }
+}
+
+fn check_codex_config(repo_path: &Path) -> CheckResult {
+    let config_path = hook::codex_config_path(repo_path);
+    if !config_path.exists() {
+        return CheckResult::fail(
+            "Codex hooks feature",
+            format!("{} does not exist", config_path.display()),
+            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+        );
+    }
+
+    let content = match fs::read_to_string(&config_path) {
+        Ok(content) => content,
+        Err(e) => {
+            return CheckResult::fail(
+                "Codex hooks feature",
+                format!("failed to read {}: {e}", config_path.display()),
+                format!("Check permissions for {}.", config_path.display()),
+            );
+        }
+    };
+
+    let value = match toml::from_str::<toml::Value>(&content) {
+        Ok(value) => value,
+        Err(e) => {
+            return CheckResult::fail(
+                "Codex hooks feature",
+                format!("invalid TOML in {}: {e}", config_path.display()),
+                format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            );
+        }
+    };
+
+    if value
+        .get("features")
+        .and_then(|features| features.get("codex_hooks"))
+        .and_then(|enabled| enabled.as_bool())
+        == Some(true)
+    {
+        CheckResult::pass("Codex hooks feature", "features.codex_hooks is enabled")
+    } else {
+        CheckResult::fail(
+            "Codex hooks feature",
+            "features.codex_hooks is not enabled",
+            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+        )
+    }
+}
+
+fn check_codex_hook(repo_path: &Path) -> CheckResult {
+    let hooks_path = hook::codex_hooks_path(repo_path);
+    if !hooks_path.exists() {
+        return CheckResult::fail(
+            "Codex PreToolUse hook",
+            format!("{} does not exist", hooks_path.display()),
+            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+        );
+    }
+
+    let settings = match hook::read_settings(&hooks_path) {
+        Ok(settings) => settings,
+        Err(e) => {
+            return CheckResult::fail(
+                "Codex PreToolUse hook",
+                e,
+                format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            );
+        }
+    };
+
+    let entries = hook::codex_hook_entries_for_matcher(&settings, hook::TKN_CODEX_MATCHER);
+    let tkn_entries: Vec<_> = entries
+        .into_iter()
+        .filter(|entry| hook::is_tkn_hook(entry))
+        .collect();
+
+    if tkn_entries.is_empty() {
+        return CheckResult::fail(
+            "Codex PreToolUse hook",
+            "missing tkn hook entry",
+            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+        );
+    }
+
+    if tkn_entries.len() > 1 {
+        return CheckResult::fail(
+            "Codex PreToolUse hook",
+            "duplicate tkn hook entries detected",
+            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+        );
+    }
+
+    if !hook::has_expected_codex_hook_command(tkn_entries[0]) {
+        return CheckResult::fail(
+            "Codex PreToolUse hook",
+            "tkn hook entry does not point to `tkn hook run --codex`",
+            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+        );
+    }
+
+    CheckResult::pass(
+        "Codex PreToolUse hook",
+        "configured with `tkn hook run --codex`",
+    )
 }
 
 fn check_claude_matcher(settings: &serde_json::Value, matcher: &str) -> CheckResult {
@@ -311,7 +417,10 @@ fn check_builtin_registry() -> CheckResult {
         }
     }
 
-    CheckResult::pass("built-in plugins", "built-in plugin registry loads successfully")
+    CheckResult::pass(
+        "built-in plugins",
+        "built-in plugin registry loads successfully",
+    )
 }
 
 fn render_human(report: &DoctorReport) {
@@ -366,7 +475,10 @@ mod tests {
 
     #[test]
     fn doctor_claude_reports_missing_settings() {
-        let home = env::temp_dir().join(format!("tkn-doctor-claude-missing-{}", uuid::Uuid::new_v4()));
+        let home = env::temp_dir().join(format!(
+            "tkn-doctor-claude-missing-{}",
+            uuid::Uuid::new_v4()
+        ));
         fs::create_dir_all(&home).unwrap();
 
         let report = doctor_claude_at(&home);
@@ -378,17 +490,23 @@ mod tests {
 
     #[test]
     fn doctor_claude_reports_invalid_json() {
-        let home = env::temp_dir().join(format!("tkn-doctor-claude-invalid-{}", uuid::Uuid::new_v4()));
+        let home = env::temp_dir().join(format!(
+            "tkn-doctor-claude-invalid-{}",
+            uuid::Uuid::new_v4()
+        ));
         let settings_path = hook::claude_settings_path(&home);
         fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
         fs::write(&settings_path, "{invalid").unwrap();
 
         let report = doctor_claude_at(&home);
         assert!(report.has_failures());
-        assert!(report
-            .checks
-            .iter()
-            .any(|check| check.name == "Claude settings JSON" && check.status == CheckStatus::Fail));
+        assert!(
+            report
+                .checks
+                .iter()
+                .any(|check| check.name == "Claude settings JSON"
+                    && check.status == CheckStatus::Fail)
+        );
 
         let _ = fs::remove_dir_all(home);
     }
@@ -423,10 +541,13 @@ mod tests {
         .unwrap();
 
         let report = doctor_claude_at(&home);
-        assert!(report
-            .checks
-            .iter()
-            .any(|check| check.name == "Bash PreToolUse hook" && check.status == CheckStatus::Fail));
+        assert!(
+            report
+                .checks
+                .iter()
+                .any(|check| check.name == "Bash PreToolUse hook"
+                    && check.status == CheckStatus::Fail)
+        );
 
         let _ = fs::remove_dir_all(home);
     }
@@ -444,7 +565,8 @@ mod tests {
 
     #[test]
     fn doctor_codex_reports_missing_agents() {
-        let repo = env::temp_dir().join(format!("tkn-doctor-codex-missing-{}", uuid::Uuid::new_v4()));
+        let repo =
+            env::temp_dir().join(format!("tkn-doctor-codex-missing-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(repo.join(".git")).unwrap();
 
         let report = doctor_codex_for_repo(Ok(repo.clone()), true);
@@ -463,13 +585,18 @@ mod tests {
         setup_codex_repo(&repo).unwrap();
         let agents_path = repo.join("AGENTS.md");
         let existing = fs::read_to_string(&agents_path).unwrap();
-        fs::write(&agents_path, format!("# Notes\n\n- Run `cargo test`\n\n{existing}")).unwrap();
+        fs::write(
+            &agents_path,
+            format!("# Notes\n\n- Run `cargo test`\n\n{existing}"),
+        )
+        .unwrap();
 
         let report = doctor_codex_for_repo(Ok(repo.clone()), true);
         assert!(report
             .checks
             .iter()
-            .any(|check| check.name == "Contradictory instructions" && check.status == CheckStatus::Warn));
+            .any(|check| check.name == "Contradictory instructions"
+                && check.status == CheckStatus::Warn));
 
         let _ = fs::remove_dir_all(repo);
     }
