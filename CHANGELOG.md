@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/lucasilverentand/tkn/compare/v0.5.0...v0.6.0) (2026-05-07)
+
+
+### Features
+
+* add Codex hook support to the CLI ([6b37046](https://github.com/lucasilverentand/tkn/commit/6b37046a101404c5dfea2cbfa3ec8c885e254f35))
+* add Codex support to hook setup commands ([ba58f8d](https://github.com/lucasilverentand/tkn/commit/ba58f8d4c87cdd4723e66b69f6afe033bfd245c5))
+
 ## [0.5.0](https://github.com/lucasilverentand/tkn/compare/v0.4.0...v0.5.0) (2026-05-07)
 
 
