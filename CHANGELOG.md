@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/lucasilverentand/tkn/compare/v0.4.0...v0.5.0) (2026-05-07)
+
+
+### Features
+
+* add Codex PreToolUse hook support ([806812a](https://github.com/lucasilverentand/tkn/commit/806812a019a4d6e4e2b0194739a7f336b81203c0))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate toml to 0.9 ([85f1c89](https://github.com/lucasilverentand/tkn/commit/85f1c89041449ddb3484625626cd1343eb6cd967))
+* **deps:** update rust crate toml to 0.9 ([18c61c7](https://github.com/lucasilverentand/tkn/commit/18c61c777b35ab6d13002ef3b818554c31704950))
+* **deps:** update rust crate toml to v1 ([39d965a](https://github.com/lucasilverentand/tkn/commit/39d965a615d4d484f76f2b27f441b886e001bc66))
+* **deps:** update rust crate toml to v1 ([83022dc](https://github.com/lucasilverentand/tkn/commit/83022dc0165a1ed3070c5d83a8fca824c1566334))
+* satisfy current Rust CI checks ([099a11c](https://github.com/lucasilverentand/tkn/commit/099a11c00e376c70221af16859438a5eba00a001))
+
 ## [0.4.0](https://github.com/lucasilverentand/tkn/compare/v0.3.0...v0.4.0) (2026-04-08)
 
 
