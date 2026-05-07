@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.4](https://github.com/lucasilverentand/tkn/compare/v0.6.3...v0.6.4) (2026-05-07)
+
+
+### Features
+
+* make Codex hook install global by default ([1268dba](https://github.com/lucasilverentand/tkn/commit/1268dba95e405159da4ae009560f999f84d413bd))
+
+
+### Bug Fixes
+
+* prevent duplicate release-please PRs ([36f050c](https://github.com/lucasilverentand/tkn/commit/36f050c3c92726adf542ec2c8233a47e2e4a4e9f))
+* prevent duplicate release-please PRs ([4f708e0](https://github.com/lucasilverentand/tkn/commit/4f708e0900bf217fec25e8b3e43fb6a74e5bbacb))
+
 ## [0.6.3](https://github.com/lucasilverentand/tkn/compare/v0.6.2...v0.6.3) (2026-05-07)
 
 
