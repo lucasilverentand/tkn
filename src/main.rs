@@ -25,22 +25,25 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Auto-route command to optimized or passthrough execution
+    /// Route a command through optimized or passthrough execution
     Auto {
+        /// Command and arguments to run
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
     /// Execute a command through the optimization proxy
     Exec {
+        /// Command and arguments to run
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
     /// Pass a command through with inherited stdio (no capture/optimization)
     Pass {
+        /// Command and arguments to run
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
-    /// Show analytics and usage statistics
+    /// Show command counts and output-size savings
     Stats {
         /// Remove a specific tool from stats (e.g. "git diff")
         #[arg(long)]
@@ -49,41 +52,43 @@ enum Commands {
         #[arg(long)]
         reset_failures: Option<String>,
     },
-    /// Browse and retrieve command logs
+    /// Browse stored command logs
     Log {
         /// Reference ID to show full log for
         id: Option<String>,
-        /// Reason for requesting the full log (required when viewing a log)
+        /// Reason for reading the full log (required when viewing a log)
         reason: Option<String>,
         /// Line range (e.g., "10:20") or single line number (e.g., "42")
         #[arg(long)]
         lines: Option<String>,
     },
-    /// Install, uninstall, or run assistant hooks
+    /// Manage Claude and Codex hooks
     Hook {
         #[command(subcommand)]
         action: HookAction,
     },
-    /// Install or repair assistant integrations
+    /// Install or repair Claude and Codex integrations
     Setup {
+        /// Assistant integration to set up
         #[arg(value_enum)]
         target: AssistantTarget,
-        /// Repository path for Codex AGENTS.md bootstrap
+        /// Git repository for Codex config, hooks, and AGENTS.md
         #[arg(long)]
         repo: Option<PathBuf>,
     },
-    /// Verify assistant integrations and local tkn health
+    /// Verify tkn storage, plugins, and assistant integrations
     Doctor {
+        /// Assistant integration to verify
         #[arg(value_enum)]
         target: Option<AssistantTarget>,
-        /// Repository path for Codex AGENTS.md verification
+        /// Git repository for Codex config, hooks, and AGENTS.md
         #[arg(long)]
         repo: Option<PathBuf>,
         /// Emit machine-readable JSON output
         #[arg(long)]
         json: bool,
     },
-    /// Clear stats and logs
+    /// Clear stored stats and/or logs
     Clean {
         /// Only clear logs
         #[arg(long)]
@@ -92,7 +97,7 @@ enum Commands {
         #[arg(long)]
         stats: bool,
     },
-    /// Analyze recorded outputs to help craft an optimal plugin config
+    /// Inspect command history for plugin optimization opportunities
     Analyze {
         #[command(subcommand)]
         action: AnalyzeAction,
@@ -113,12 +118,12 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum PluginAction {
-    /// Install plugins (built-ins or from a git repo URL)
+    /// Install built-in plugins or plugins from a repository URL
     Install {
-        /// Git repository URL (omit to install built-in defaults)
+        /// Repository URL, or "default"; omit to install built-in defaults
         url: Option<String>,
     },
-    /// List installed and available plugins
+    /// List built-in and installed plugins
     List,
     /// Remove an installed plugin
     Remove {
@@ -140,19 +145,21 @@ enum AnalyzeAction {
 
 #[derive(Subcommand)]
 enum HookAction {
-    /// Install an assistant hook
+    /// Install or repair Claude and/or Codex hooks
     Install {
+        /// Assistant target (default: all)
         #[arg(value_enum)]
         target: Option<AssistantTarget>,
-        /// Repository path for Codex repo-level hook setup
+        /// Git repository for Codex config, hooks, and AGENTS.md
         #[arg(long)]
         repo: Option<PathBuf>,
     },
-    /// Uninstall an assistant hook
+    /// Remove Claude and/or Codex hooks
     Uninstall {
+        /// Assistant target (default: all)
         #[arg(value_enum)]
         target: Option<AssistantTarget>,
-        /// Repository path for Codex repo-level hook removal
+        /// Git repository for Codex config, hooks, and AGENTS.md
         #[arg(long)]
         repo: Option<PathBuf>,
     },
@@ -229,11 +236,58 @@ fn main() {
 
 fn hook_target_or_default(
     target: Option<AssistantTarget>,
-    repo: Option<&PathBuf>,
+    _repo: Option<&PathBuf>,
 ) -> AssistantTarget {
-    target.unwrap_or(if repo.is_some() {
-        AssistantTarget::Codex
-    } else {
-        AssistantTarget::Claude
-    })
+    target.unwrap_or(AssistantTarget::All)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    #[test]
+    fn hook_target_defaults_to_all_without_repo() {
+        assert_eq!(hook_target_or_default(None, None), AssistantTarget::All);
+    }
+
+    #[test]
+    fn hook_target_defaults_to_all_with_repo() {
+        let repo = PathBuf::from("/tmp/example");
+        assert_eq!(
+            hook_target_or_default(None, Some(&repo)),
+            AssistantTarget::All
+        );
+    }
+
+    #[test]
+    fn hook_target_preserves_explicit_target() {
+        assert_eq!(
+            hook_target_or_default(Some(AssistantTarget::Claude), None),
+            AssistantTarget::Claude
+        );
+        assert_eq!(
+            hook_target_or_default(Some(AssistantTarget::Codex), None),
+            AssistantTarget::Codex
+        );
+    }
+
+    #[test]
+    fn help_output_describes_current_hook_defaults() {
+        let mut command = Cli::command();
+        let help = command.render_long_help().to_string();
+        assert!(help.contains("Manage Claude and Codex hooks"));
+        assert!(!help.contains("repo-level"));
+        assert!(!help.contains("bootstrap"));
+
+        let mut hook_install = Cli::command()
+            .find_subcommand_mut("hook")
+            .and_then(|hook| hook.find_subcommand_mut("install"))
+            .unwrap()
+            .clone();
+        let hook_install_help = hook_install.render_long_help().to_string();
+        assert!(hook_install_help.contains("Assistant target (default: all)"));
+        assert!(hook_install_help.contains("Git repository for Codex config, hooks, and AGENTS.md"));
+        assert!(!hook_install_help.contains("repo-level"));
+    }
 }

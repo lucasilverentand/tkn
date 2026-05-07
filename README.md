@@ -109,7 +109,7 @@ tkn hook install codex --repo /path/to/repo
 tkn hook uninstall codex --repo /path/to/repo
 ```
 
-When `--repo` is present, the hook CLI defaults to Codex if no target is given.
+When no target is given, the hook CLI installs both Claude and Codex hooks. For Codex, it uses the current git repository unless `--repo` is provided.
 
 This creates or updates:
 
