@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/lucasilverentand/tkn/compare/v0.6.1...v0.6.2) (2026-05-08)
+
+
+### Bug Fixes
+
+* install all hooks by default ([aa0164b](https://github.com/lucasilverentand/tkn/commit/aa0164bad205b142d9ef5b02222b1461fc70bf05))
+
 ## [0.6.1](https://github.com/lucasilverentand/tkn/compare/tkn-v0.6.0...tkn-v0.6.1) (2026-05-07)
 
 
