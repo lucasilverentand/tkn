@@ -72,7 +72,7 @@ enum Commands {
         /// Assistant integration to set up
         #[arg(value_enum)]
         target: AssistantTarget,
-        /// Git repository for Codex config, hooks, and AGENTS.md
+        /// Git repository for repo-local Codex setup; omit for global ~/.codex setup
         #[arg(long)]
         repo: Option<PathBuf>,
     },
@@ -81,7 +81,7 @@ enum Commands {
         /// Assistant integration to verify
         #[arg(value_enum)]
         target: Option<AssistantTarget>,
-        /// Git repository for Codex config, hooks, and AGENTS.md
+        /// Git repository for repo-local Codex checks; omit for global ~/.codex checks
         #[arg(long)]
         repo: Option<PathBuf>,
         /// Emit machine-readable JSON output
@@ -150,7 +150,7 @@ enum HookAction {
         /// Assistant target (default: all)
         #[arg(value_enum)]
         target: Option<AssistantTarget>,
-        /// Git repository for Codex config, hooks, and AGENTS.md
+        /// Git repository for repo-local Codex setup; omit for global ~/.codex setup
         #[arg(long)]
         repo: Option<PathBuf>,
     },
@@ -159,7 +159,7 @@ enum HookAction {
         /// Assistant target (default: all)
         #[arg(value_enum)]
         target: Option<AssistantTarget>,
-        /// Git repository for Codex config, hooks, and AGENTS.md
+        /// Git repository for repo-local Codex removal; omit for global ~/.codex removal
         #[arg(long)]
         repo: Option<PathBuf>,
     },
@@ -287,7 +287,8 @@ mod tests {
             .clone();
         let hook_install_help = hook_install.render_long_help().to_string();
         assert!(hook_install_help.contains("Assistant target (default: all)"));
-        assert!(hook_install_help.contains("Git repository for Codex config, hooks, and AGENTS.md"));
+        assert!(hook_install_help
+            .contains("Git repository for repo-local Codex setup; omit for global ~/.codex setup"));
         assert!(!hook_install_help.contains("repo-level"));
     }
 }

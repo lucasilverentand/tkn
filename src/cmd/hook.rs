@@ -97,8 +97,7 @@ fn install_codex(repo: Option<&Path>) -> i32 {
 }
 
 fn install_codex_result(repo: Option<&Path>) -> Result<setup::CodexSetupPaths, String> {
-    let repo_path = resolve_setup_repo_path(repo)?;
-    setup::setup_codex_repo(&repo_path)
+    setup::setup_codex_target(repo)
 }
 
 fn print_claude_install_success(settings_path: &Path) {
@@ -108,6 +107,7 @@ fn print_claude_install_success(settings_path: &Path) {
 
 fn print_codex_install_success(paths: &setup::CodexSetupPaths) {
     println!("tkn Codex hook installed successfully.");
+    println!("  Scope: {}", paths.scope);
     println!("  Config: {}", paths.config_path.display());
     println!("  Hooks: {}", paths.hooks_path.display());
     println!("  AGENTS: {}", paths.agents_path.display());
@@ -231,8 +231,21 @@ fn uninstall_codex(repo: Option<&Path>) -> i32 {
 }
 
 fn uninstall_codex_result(repo: Option<&Path>) -> Result<PathBuf, String> {
-    let repo_path = resolve_setup_repo_path(repo)?;
-    let hooks_path = codex_hooks_path(&repo_path);
+    let (hooks_path, agents_path) = match repo {
+        Some(repo) => {
+            let repo_path = resolve_setup_repo_path(Some(repo))?;
+            (codex_hooks_path(&repo_path), repo_path.join("AGENTS.md"))
+        }
+        None => {
+            let home_dir =
+                dirs::home_dir().ok_or_else(|| "cannot determine home directory".to_string())?;
+            (
+                codex_global_hooks_path(&home_dir),
+                codex_home_dir(&home_dir).join("AGENTS.md"),
+            )
+        }
+    };
+
     if hooks_path.exists() {
         let mut settings = read_settings(&hooks_path)?;
 
@@ -248,7 +261,6 @@ fn uninstall_codex_result(repo: Option<&Path>) -> Result<PathBuf, String> {
             .map_err(|e| format!("failed to update {}: {e}", hooks_path.display()))?;
     }
 
-    let agents_path = repo_path.join("AGENTS.md");
     if agents_path.exists() {
         let existing = fs::read_to_string(&agents_path)
             .map_err(|e| format!("failed to read {}: {e}", agents_path.display()))?;
@@ -277,6 +289,18 @@ pub fn claude_dir(home_dir: &Path) -> PathBuf {
 
 pub fn claude_settings_path(home_dir: &Path) -> PathBuf {
     claude_dir(home_dir).join("settings.json")
+}
+
+pub fn codex_home_dir(home_dir: &Path) -> PathBuf {
+    home_dir.join(".codex")
+}
+
+pub fn codex_global_config_path(home_dir: &Path) -> PathBuf {
+    codex_home_dir(home_dir).join("config.toml")
+}
+
+pub fn codex_global_hooks_path(home_dir: &Path) -> PathBuf {
+    codex_home_dir(home_dir).join("hooks.json")
 }
 
 pub fn codex_dir(repo_dir: &Path) -> PathBuf {

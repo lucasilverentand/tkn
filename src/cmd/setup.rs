@@ -61,24 +61,66 @@ fn setup_claude() -> Result<(), String> {
 }
 
 fn setup_codex(repo: Option<&Path>) -> Result<(), String> {
-    let repo_path = resolve_setup_repo_path(repo)?;
-    let paths = setup_codex_repo(&repo_path)?;
+    let paths = setup_codex_target(repo)?;
     println!("Codex setup: ready");
+    println!("  Scope: {}", paths.scope);
     println!("  Config: {}", paths.config_path.display());
     println!("  Hooks: {}", paths.hooks_path.display());
     println!("  AGENTS: {}", paths.agents_path.display());
-    println!("  Next: tkn doctor codex --repo {}", repo_path.display());
+    println!("  Next: {}", paths.doctor_command);
     Ok(())
 }
 
 pub(crate) struct CodexSetupPaths {
+    pub scope: String,
     pub agents_path: PathBuf,
     pub config_path: PathBuf,
     pub hooks_path: PathBuf,
+    pub doctor_command: String,
+}
+
+pub(crate) fn setup_codex_target(repo: Option<&Path>) -> Result<CodexSetupPaths, String> {
+    match repo {
+        Some(repo) => {
+            let repo_path = resolve_setup_repo_path(Some(repo))?;
+            setup_codex_repo(&repo_path)
+        }
+        None => {
+            let home_dir =
+                dirs::home_dir().ok_or_else(|| "cannot determine home directory".to_string())?;
+            setup_codex_home(&home_dir)
+        }
+    }
+}
+
+pub(crate) fn setup_codex_home(home_dir: &Path) -> Result<CodexSetupPaths, String> {
+    let codex_dir = hook::codex_home_dir(home_dir);
+    setup_codex_paths(
+        "global".to_string(),
+        codex_dir.join("AGENTS.md"),
+        hook::codex_global_config_path(home_dir),
+        hook::codex_global_hooks_path(home_dir),
+        "tkn doctor codex".to_string(),
+    )
 }
 
 pub(crate) fn setup_codex_repo(repo_path: &Path) -> Result<CodexSetupPaths, String> {
-    let agents_path = repo_path.join("AGENTS.md");
+    setup_codex_paths(
+        format!("repo ({})", repo_path.display()),
+        repo_path.join("AGENTS.md"),
+        hook::codex_config_path(repo_path),
+        hook::codex_hooks_path(repo_path),
+        format!("tkn doctor codex --repo {}", repo_path.display()),
+    )
+}
+
+fn setup_codex_paths(
+    scope: String,
+    agents_path: PathBuf,
+    config_path: PathBuf,
+    hooks_path: PathBuf,
+    doctor_command: String,
+) -> Result<CodexSetupPaths, String> {
     let existing = if agents_path.exists() {
         fs::read_to_string(&agents_path)
             .map_err(|e| format!("failed to read {}: {e}", agents_path.display()))?
@@ -92,21 +134,23 @@ pub(crate) fn setup_codex_repo(repo_path: &Path) -> Result<CodexSetupPaths, Stri
     fs::write(&agents_path, updated)
         .map_err(|e| format!("failed to write {}: {e}", agents_path.display()))?;
 
-    let config_path = hook::codex_config_path(repo_path);
     ensure_parent_dir(&config_path)
         .map_err(|e| format!("failed to prepare {}: {e}", config_path.display()))?;
     ensure_codex_hooks_feature(&config_path)?;
 
-    let hooks_path = hook::codex_hooks_path(repo_path);
+    ensure_parent_dir(&hooks_path)
+        .map_err(|e| format!("failed to prepare {}: {e}", hooks_path.display()))?;
     let mut hooks = hook::read_settings(&hooks_path)?;
     hook::repair_codex_hook_settings(&mut hooks)?;
     hook::write_settings(&hooks_path, &hooks)
         .map_err(|e| format!("failed to write {}: {e}", hooks_path.display()))?;
 
     Ok(CodexSetupPaths {
+        scope,
         agents_path,
         config_path,
         hooks_path,
+        doctor_command,
     })
 }
 
@@ -207,6 +251,31 @@ mod tests {
         assert!(paths.hooks_path.exists());
 
         let _ = fs::remove_dir_all(repo);
+    }
+
+    #[test]
+    fn setup_codex_home_creates_global_config() {
+        let home = env::temp_dir().join(format!("tkn-setup-codex-home-{}", uuid::Uuid::new_v4()));
+
+        let paths = setup_codex_home(&home).unwrap();
+        let content = fs::read_to_string(&paths.agents_path).unwrap();
+        let hooks = hook::read_settings(&paths.hooks_path).unwrap();
+
+        assert_eq!(paths.scope, "global");
+        assert_eq!(paths.config_path, home.join(".codex").join("config.toml"));
+        assert_eq!(paths.hooks_path, home.join(".codex").join("hooks.json"));
+        assert_eq!(paths.agents_path, home.join(".codex").join("AGENTS.md"));
+        assert!(content.contains(CODEX_BEGIN_MARKER));
+        assert!(codex_block_matches_current(&content));
+        assert!(fs::read_to_string(&paths.config_path)
+            .unwrap()
+            .contains("codex_hooks = true"));
+        assert_eq!(
+            hook::codex_hook_entries_for_matcher(&hooks, hook::TKN_CODEX_MATCHER).len(),
+            1
+        );
+
+        let _ = fs::remove_dir_all(home);
     }
 
     #[test]

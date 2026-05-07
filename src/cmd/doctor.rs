@@ -135,12 +135,50 @@ fn doctor_claude_at(home_dir: &Path) -> TargetReport {
 }
 
 fn doctor_codex(repo: Option<&Path>) -> TargetReport {
-    let repo_result = integration::resolve_doctor_repo_path(repo);
-    doctor_codex_for_repo(repo_result, integration::command_on_path("codex"))
+    let target_result = resolve_codex_doctor_target(repo);
+    doctor_codex_for_target(target_result, integration::command_on_path("codex"))
 }
 
-fn doctor_codex_for_repo(
-    repo_result: Result<std::path::PathBuf, String>,
+#[derive(Clone, Debug)]
+struct CodexDoctorTarget {
+    discovery_name: &'static str,
+    discovery_message: String,
+    config_path: std::path::PathBuf,
+    hooks_path: std::path::PathBuf,
+    agents_path: std::path::PathBuf,
+    setup_command: String,
+}
+
+fn resolve_codex_doctor_target(repo: Option<&Path>) -> Result<CodexDoctorTarget, String> {
+    match repo {
+        Some(repo) => {
+            let repo_path = integration::resolve_doctor_repo_path(Some(repo))?;
+            Ok(CodexDoctorTarget {
+                discovery_name: "repository discovery",
+                discovery_message: format!("using {}", repo_path.display()),
+                config_path: hook::codex_config_path(&repo_path),
+                hooks_path: hook::codex_hooks_path(&repo_path),
+                agents_path: repo_path.join("AGENTS.md"),
+                setup_command: format!("tkn setup codex --repo {}", repo_path.display()),
+            })
+        }
+        None => {
+            let home_dir =
+                dirs::home_dir().ok_or_else(|| "cannot determine home directory".to_string())?;
+            Ok(CodexDoctorTarget {
+                discovery_name: "global Codex home",
+                discovery_message: format!("using {}", hook::codex_home_dir(&home_dir).display()),
+                config_path: hook::codex_global_config_path(&home_dir),
+                hooks_path: hook::codex_global_hooks_path(&home_dir),
+                agents_path: hook::codex_home_dir(&home_dir).join("AGENTS.md"),
+                setup_command: "tkn setup codex".to_string(),
+            })
+        }
+    }
+}
+
+fn doctor_codex_for_target(
+    target_result: Result<CodexDoctorTarget, String>,
     codex_on_path: bool,
 ) -> TargetReport {
     let mut checks = Vec::new();
@@ -155,19 +193,19 @@ fn doctor_codex_for_repo(
         ));
     }
 
-    let repo_path = match repo_result {
-        Ok(repo_path) => {
+    let target = match target_result {
+        Ok(target) => {
             checks.push(CheckResult::pass(
-                "repository discovery",
-                format!("using {}", repo_path.display()),
+                target.discovery_name,
+                target.discovery_message.clone(),
             ));
-            repo_path
+            target
         }
         Err(e) => {
             checks.push(CheckResult::fail(
-                "repository discovery",
+                "Codex target discovery",
                 e,
-                "Run `tkn doctor codex --repo <path>` from a git repository.",
+                "Run `tkn doctor codex` for global setup or pass `--repo <path>` for repo setup.",
             ));
             return TargetReport {
                 target: "codex".to_string(),
@@ -176,17 +214,20 @@ fn doctor_codex_for_repo(
         }
     };
 
-    checks.push(check_codex_config(&repo_path));
-    checks.push(check_codex_hook(&repo_path));
+    checks.push(check_codex_config(
+        &target.config_path,
+        &target.setup_command,
+    ));
+    checks.push(check_codex_hook(&target.hooks_path, &target.setup_command));
 
-    let agents_path = repo_path.join("AGENTS.md");
+    let agents_path = &target.agents_path;
     if !agents_path.exists() {
         checks.push(CheckResult::fail(
             "AGENTS.md",
             format!("{} does not exist", agents_path.display()),
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{}`.", target.setup_command),
         ));
-    } else if let Ok(agents_content) = fs::read_to_string(&agents_path) {
+    } else if let Ok(agents_content) = fs::read_to_string(agents_path) {
         if integration::codex_block_matches_current(&agents_content) {
             checks.push(CheckResult::pass(
                 "Codex managed block",
@@ -196,7 +237,7 @@ fn doctor_codex_for_repo(
             checks.push(CheckResult::fail(
                 "Codex managed block",
                 "managed tkn block is missing or stale",
-                format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+                format!("Run `{}`.", target.setup_command),
             ));
         }
 
@@ -217,7 +258,7 @@ fn doctor_codex_for_repo(
             ));
         }
     } else {
-        let err = fs::read_to_string(&agents_path).unwrap_err();
+        let err = fs::read_to_string(agents_path).unwrap_err();
         checks.push(CheckResult::fail(
             "AGENTS.md",
             format!("failed to read {}: {err}", agents_path.display()),
@@ -231,17 +272,16 @@ fn doctor_codex_for_repo(
     }
 }
 
-fn check_codex_config(repo_path: &Path) -> CheckResult {
-    let config_path = hook::codex_config_path(repo_path);
+fn check_codex_config(config_path: &Path, setup_command: &str) -> CheckResult {
     if !config_path.exists() {
         return CheckResult::fail(
             "Codex hooks feature",
             format!("{} does not exist", config_path.display()),
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{setup_command}`."),
         );
     }
 
-    let content = match fs::read_to_string(&config_path) {
+    let content = match fs::read_to_string(config_path) {
         Ok(content) => content,
         Err(e) => {
             return CheckResult::fail(
@@ -258,7 +298,7 @@ fn check_codex_config(repo_path: &Path) -> CheckResult {
             return CheckResult::fail(
                 "Codex hooks feature",
                 format!("invalid TOML in {}: {e}", config_path.display()),
-                format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+                format!("Run `{setup_command}`."),
             );
         }
     };
@@ -274,28 +314,27 @@ fn check_codex_config(repo_path: &Path) -> CheckResult {
         CheckResult::fail(
             "Codex hooks feature",
             "features.codex_hooks is not enabled",
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{setup_command}`."),
         )
     }
 }
 
-fn check_codex_hook(repo_path: &Path) -> CheckResult {
-    let hooks_path = hook::codex_hooks_path(repo_path);
+fn check_codex_hook(hooks_path: &Path, setup_command: &str) -> CheckResult {
     if !hooks_path.exists() {
         return CheckResult::fail(
             "Codex PreToolUse hook",
             format!("{} does not exist", hooks_path.display()),
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{setup_command}`."),
         );
     }
 
-    let settings = match hook::read_settings(&hooks_path) {
+    let settings = match hook::read_settings(hooks_path) {
         Ok(settings) => settings,
         Err(e) => {
             return CheckResult::fail(
                 "Codex PreToolUse hook",
                 e,
-                format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+                format!("Run `{setup_command}`."),
             );
         }
     };
@@ -310,7 +349,7 @@ fn check_codex_hook(repo_path: &Path) -> CheckResult {
         return CheckResult::fail(
             "Codex PreToolUse hook",
             "missing tkn hook entry",
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{setup_command}`."),
         );
     }
 
@@ -318,7 +357,7 @@ fn check_codex_hook(repo_path: &Path) -> CheckResult {
         return CheckResult::fail(
             "Codex PreToolUse hook",
             "duplicate tkn hook entries detected",
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{setup_command}`."),
         );
     }
 
@@ -326,7 +365,7 @@ fn check_codex_hook(repo_path: &Path) -> CheckResult {
         return CheckResult::fail(
             "Codex PreToolUse hook",
             "tkn hook entry does not point to `tkn hook run --codex`",
-            format!("Run `tkn setup codex --repo {}`.", repo_path.display()),
+            format!("Run `{setup_command}`."),
         );
     }
 
@@ -458,6 +497,17 @@ mod tests {
 
     use super::*;
 
+    fn codex_repo_target(repo: &Path) -> CodexDoctorTarget {
+        CodexDoctorTarget {
+            discovery_name: "repository discovery",
+            discovery_message: format!("using {}", repo.display()),
+            config_path: hook::codex_config_path(repo),
+            hooks_path: hook::codex_hooks_path(repo),
+            agents_path: repo.join("AGENTS.md"),
+            setup_command: format!("tkn setup codex --repo {}", repo.display()),
+        }
+    }
+
     #[test]
     fn doctor_json_output_shape_is_stable() {
         let report = DoctorReport {
@@ -569,7 +619,7 @@ mod tests {
             env::temp_dir().join(format!("tkn-doctor-codex-missing-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(repo.join(".git")).unwrap();
 
-        let report = doctor_codex_for_repo(Ok(repo.clone()), true);
+        let report = doctor_codex_for_target(Ok(codex_repo_target(&repo)), true);
         assert!(report
             .checks
             .iter()
@@ -591,7 +641,7 @@ mod tests {
         )
         .unwrap();
 
-        let report = doctor_codex_for_repo(Ok(repo.clone()), true);
+        let report = doctor_codex_for_target(Ok(codex_repo_target(&repo)), true);
         assert!(report
             .checks
             .iter()
@@ -607,7 +657,7 @@ mod tests {
         fs::create_dir_all(repo.join(".git")).unwrap();
         setup_codex_repo(&repo).unwrap();
 
-        let report = doctor_codex_for_repo(Ok(repo.clone()), true);
+        let report = doctor_codex_for_target(Ok(codex_repo_target(&repo)), true);
         assert!(report
             .checks
             .iter()
