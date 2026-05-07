@@ -102,6 +102,15 @@ Codex support is repo-based. `tkn` manages a Codex hook configuration and a smal
 tkn setup codex --repo /path/to/repo
 ```
 
+You can also install the repo-level Codex integration or remove its managed hook entry and `AGENTS.md` block through the hook CLI:
+
+```sh
+tkn hook install codex --repo /path/to/repo
+tkn hook uninstall codex --repo /path/to/repo
+```
+
+When `--repo` is present, the hook CLI defaults to Codex if no target is given.
+
 This creates or updates:
 
 - `.codex/config.toml` with `features.codex_hooks = true`
@@ -178,8 +187,8 @@ Each plugin defines flag transforms (adding `--no-pager`, removing `--color=alwa
 | `tkn clean` | Clear stats and logs |
 | `tkn setup <claude\|codex\|all>` | Install or repair assistant integration |
 | `tkn doctor [claude\|codex\|all] [--json]` | Verify tkn, Claude, and Codex setup |
-| `tkn hook install` | Install the Claude Code hook directly |
-| `tkn hook uninstall` | Remove the Claude Code hook |
+| `tkn hook install [claude\|codex\|all] [--repo path]` | Install assistant hooks directly |
+| `tkn hook uninstall [claude\|codex\|all] [--repo path]` | Remove assistant hooks |
 | `tkn hook run --codex` | Run the Codex `PreToolUse` hook mode |
 
 ## Writing plugins

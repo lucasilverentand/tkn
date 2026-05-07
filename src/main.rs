@@ -140,10 +140,22 @@ enum AnalyzeAction {
 
 #[derive(Subcommand)]
 enum HookAction {
-    /// Install the Claude Code hook
-    Install,
-    /// Uninstall the Claude Code hook
-    Uninstall,
+    /// Install an assistant hook
+    Install {
+        #[arg(value_enum)]
+        target: Option<AssistantTarget>,
+        /// Repository path for Codex repo-level hook setup
+        #[arg(long)]
+        repo: Option<PathBuf>,
+    },
+    /// Uninstall an assistant hook
+    Uninstall {
+        #[arg(value_enum)]
+        target: Option<AssistantTarget>,
+        /// Repository path for Codex repo-level hook removal
+        #[arg(long)]
+        repo: Option<PathBuf>,
+    },
     /// Run an assistant hook (reads stdin, writes stdout)
     Run {
         /// Run in Codex PreToolUse mode
@@ -177,8 +189,14 @@ fn main() {
             cmd::logs::run(id.as_deref(), reason.as_deref(), lines.as_deref())
         }
         Commands::Hook { action } => match action {
-            HookAction::Install => cmd::hook::install(),
-            HookAction::Uninstall => cmd::hook::uninstall(),
+            HookAction::Install { target, repo } => {
+                let target = hook_target_or_default(target, repo.as_ref());
+                cmd::hook::install(target, repo.as_deref())
+            }
+            HookAction::Uninstall { target, repo } => {
+                let target = hook_target_or_default(target, repo.as_ref());
+                cmd::hook::uninstall(target, repo.as_deref())
+            }
             HookAction::Run { codex, .. } => {
                 cmd::hook::run(codex);
                 0
@@ -207,4 +225,15 @@ fn main() {
     };
 
     std::process::exit(exit_code);
+}
+
+fn hook_target_or_default(
+    target: Option<AssistantTarget>,
+    repo: Option<&PathBuf>,
+) -> AssistantTarget {
+    target.unwrap_or(if repo.is_some() {
+        AssistantTarget::Codex
+    } else {
+        AssistantTarget::Claude
+    })
 }
