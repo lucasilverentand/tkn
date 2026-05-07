@@ -410,11 +410,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
             "uv-pip-install",
             include_str!("../plugins/uv/install.toml"),
         ),
-        (
-            "uv",
-            "uv-sync",
-            include_str!("../plugins/uv/sync.toml"),
-        ),
+        ("uv", "uv-sync", include_str!("../plugins/uv/sync.toml")),
         ("uv", "uv-run", include_str!("../plugins/uv/run.toml")),
         // helm
         (
@@ -528,16 +524,8 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
             "yarn-install",
             include_str!("../plugins/yarn/install.toml"),
         ),
-        (
-            "yarn",
-            "yarn-add",
-            include_str!("../plugins/yarn/add.toml"),
-        ),
-        (
-            "yarn",
-            "yarn-run",
-            include_str!("../plugins/yarn/run.toml"),
-        ),
+        ("yarn", "yarn-add", include_str!("../plugins/yarn/add.toml")),
+        ("yarn", "yarn-run", include_str!("../plugins/yarn/run.toml")),
         // vite
         (
             "vite",
@@ -587,11 +575,7 @@ pub fn builtin_plugins() -> Vec<(&'static str, &'static str, &'static str)> {
             "flux-reconcile",
             include_str!("../plugins/flux/reconcile.toml"),
         ),
-        (
-            "flux",
-            "flux-get",
-            include_str!("../plugins/flux/get.toml"),
-        ),
+        ("flux", "flux-get", include_str!("../plugins/flux/get.toml")),
         // mise
         (
             "mise",

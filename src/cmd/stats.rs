@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
 use crate::storage::StorageManager;
@@ -101,7 +102,7 @@ pub fn run(reset: Option<&str>, reset_failures: Option<&str>) -> i32 {
 
         // Sort entries within each group by count descending
         for entries in groups.values_mut() {
-            entries.sort_by(|a, b| b.1.count.cmp(&a.1.count));
+            entries.sort_by_key(|(_, stats)| Reverse(stats.count));
         }
 
         // Sort groups by total count descending
