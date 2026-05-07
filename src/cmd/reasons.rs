@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::collections::HashMap;
 
 use crate::storage::StorageManager;
@@ -34,7 +35,7 @@ pub fn run() {
 
     // Sort tools by count descending
     let mut sorted: Vec<_> = by_tool.into_iter().collect();
-    sorted.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
+    sorted.sort_by_key(|(_, entries)| Reverse(entries.len()));
 
     println!("Full log reads: {} total", entries.len());
     println!("{}", "-".repeat(50));
@@ -49,7 +50,7 @@ pub fn run() {
             *reason_counts.entry(&entry.reason).or_insert(0) += 1;
         }
         let mut sorted_reasons: Vec<_> = reason_counts.into_iter().collect();
-        sorted_reasons.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted_reasons.sort_by_key(|(_, count)| Reverse(*count));
 
         for (reason, count) in &sorted_reasons {
             if *count > 1 {

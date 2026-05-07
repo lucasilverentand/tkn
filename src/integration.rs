@@ -7,7 +7,7 @@ use serde::Serialize;
 
 pub const CODEX_BEGIN_MARKER: &str = "<!-- tkn:begin codex -->";
 pub const CODEX_END_MARKER: &str = "<!-- tkn:end codex -->";
-pub const CODEX_TEMPLATE_VERSION: u32 = 1;
+pub const CODEX_TEMPLATE_VERSION: u32 = 2;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -76,7 +76,9 @@ impl CheckResult {
 
 impl TargetReport {
     pub fn has_failures(&self) -> bool {
-        self.checks.iter().any(|check| check.status == CheckStatus::Fail)
+        self.checks
+            .iter()
+            .any(|check| check.status == CheckStatus::Fail)
     }
 }
 
@@ -170,6 +172,7 @@ pub fn codex_managed_block() -> String {
 <!-- tkn:template-version {CODEX_TEMPLATE_VERSION} -->\n\
 ## tkn Codex Workflow\n\
 \n\
+- This repo enables a Codex `PreToolUse` hook in `.codex/hooks.json` that blocks bare Bash commands and asks Codex to rerun them through `tkn`.\n\
 - Default to `tkn auto -- <command>`.\n\
 - Use `tkn exec -- <command>` for deterministic captured output.\n\
 - Use `tkn pass -- <command>` for interactive, long-lived, or streaming commands.\n\
@@ -243,7 +246,11 @@ pub fn contradictory_codex_lines(content: &str) -> Vec<String> {
 
     for raw_line in stripped.lines() {
         let line = raw_line.trim();
-        if line.is_empty() || line.contains("tkn auto --") || line.contains("tkn exec --") || line.contains("tkn pass --") {
+        if line.is_empty()
+            || line.contains("tkn auto --")
+            || line.contains("tkn exec --")
+            || line.contains("tkn pass --")
+        {
             continue;
         }
 
@@ -299,9 +306,7 @@ mod tests {
 
     #[test]
     fn updates_existing_codex_block_in_place() {
-        let original = format!(
-            "Intro\n\n{CODEX_BEGIN_MARKER}\nold\n{CODEX_END_MARKER}\n\nOutro\n"
-        );
+        let original = format!("Intro\n\n{CODEX_BEGIN_MARKER}\nold\n{CODEX_END_MARKER}\n\nOutro\n");
         let updated = upsert_codex_managed_block(&original);
         assert!(updated.contains("## tkn Codex Workflow"));
         assert!(updated.starts_with("Intro\n\n"));

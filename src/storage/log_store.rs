@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::fs;
 
 use crate::types::LogEntry;
@@ -50,7 +51,7 @@ impl StorageManager {
                 }
             }
         }
-        entries.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        entries.sort_by_key(|entry| Reverse(entry.timestamp));
         Ok(entries)
     }
 }

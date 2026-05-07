@@ -59,7 +59,7 @@ enum Commands {
         #[arg(long)]
         lines: Option<String>,
     },
-    /// Install or uninstall the Claude Code hook
+    /// Install, uninstall, or run assistant hooks
     Hook {
         #[command(subcommand)]
         action: HookAction,
@@ -144,8 +144,11 @@ enum HookAction {
     Install,
     /// Uninstall the Claude Code hook
     Uninstall,
-    /// Run the Claude Code hook (reads stdin, rewrites command, writes stdout)
+    /// Run an assistant hook (reads stdin, writes stdout)
     Run {
+        /// Run in Codex PreToolUse mode
+        #[arg(long, hide = true)]
+        codex: bool,
         /// Extra arguments (ignored, passed by Claude Code)
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
         _args: Vec<String>,
@@ -176,15 +179,13 @@ fn main() {
         Commands::Hook { action } => match action {
             HookAction::Install => cmd::hook::install(),
             HookAction::Uninstall => cmd::hook::uninstall(),
-            HookAction::Run { .. } => {
-                cmd::hook::run();
+            HookAction::Run { codex, .. } => {
+                cmd::hook::run(codex);
                 0
             }
         },
         Commands::Setup { target, repo } => cmd::setup::run(target, repo.as_deref()),
-        Commands::Doctor { target, repo, json } => {
-            cmd::doctor::run(target, repo.as_deref(), json)
-        }
+        Commands::Doctor { target, repo, json } => cmd::doctor::run(target, repo.as_deref(), json),
         Commands::Clean { logs, stats } => cmd::clean::run(logs, stats),
         Commands::Analyze { action } => match action {
             AnalyzeAction::Scan => cmd::analyze::scan(),

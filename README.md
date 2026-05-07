@@ -69,7 +69,7 @@ Start with a health check:
 tkn doctor
 ```
 
-This verifies local `~/.tkn` storage, built-in plugin availability, Claude hook state, and Codex repo bootstrap state.
+This verifies local `~/.tkn` storage, built-in plugin availability, Claude hook state, and Codex repo hook state.
 
 ### Claude Code (machine-level hook)
 
@@ -94,19 +94,25 @@ To remove the hook:
 tkn hook uninstall
 ```
 
-### Codex (repo bootstrap, not a global hook)
+### Codex (repo-level hook)
 
-Codex support is repo-based rather than hook-based. `tkn` manages a Codex block inside the target repo's `AGENTS.md`:
+Codex support is repo-based. `tkn` manages a Codex hook configuration and a small instructions block inside the target repo:
 
 ```sh
 tkn setup codex --repo /path/to/repo
 ```
 
-This creates or updates a managed section that tells Codex to default to:
+This creates or updates:
+
+- `.codex/config.toml` with `features.codex_hooks = true`
+- `.codex/hooks.json` with a Bash `PreToolUse` hook that runs `tkn hook run --codex`
+- `AGENTS.md` with a managed section that tells Codex to default to:
 
 - `tkn auto -- <command>`
 - `tkn exec -- <command>` for deterministic captured output
 - `tkn pass -- <command>` for interactive, long-lived, or streaming commands
+
+Codex does not currently support rewriting `PreToolUse` command input, so the hook blocks bare Bash commands and asks Codex to rerun them through `tkn`.
 
 To verify that a repo still has the current managed block:
 
@@ -174,6 +180,7 @@ Each plugin defines flag transforms (adding `--no-pager`, removing `--color=alwa
 | `tkn doctor [claude\|codex\|all] [--json]` | Verify tkn, Claude, and Codex setup |
 | `tkn hook install` | Install the Claude Code hook directly |
 | `tkn hook uninstall` | Remove the Claude Code hook |
+| `tkn hook run --codex` | Run the Codex `PreToolUse` hook mode |
 
 ## Writing plugins
 
