@@ -1,5 +1,5 @@
 [tools]
-rust = "1.90"
+rust = "1.95.0"
 
 [tasks.install]
 description = "Build and install tkn to ~/.cargo/bin"
