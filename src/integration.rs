@@ -172,7 +172,7 @@ pub fn codex_managed_block() -> String {
 <!-- tkn:template-version {CODEX_TEMPLATE_VERSION} -->\n\
 ## tkn Codex Workflow\n\
 \n\
-- This Codex environment enables a `PreToolUse` hook that blocks bare Bash commands and asks Codex to rerun them through `tkn`.\n\
+- Codex `PreToolUse` hooks cannot currently rewrite command input, so the repo instructions are the source of truth for routing commands through `tkn`.\n\
 - Default to `tkn auto -- <command>`.\n\
 - Use `tkn exec -- <command>` for deterministic captured output.\n\
 - Use `tkn pass -- <command>` for interactive, long-lived, or streaming commands.\n\

@@ -540,9 +540,9 @@ fn codex_pretooluse_response(command: &str) -> serde_json::Value {
     serde_json::json!({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
+            "permissionDecision": "allow",
             "permissionDecisionReason": format!(
-                "Route assistant shell commands through tkn. Rerun this command as `{suggested}`."
+                "Prefer routing assistant shell commands through tkn. Suggested form: `{suggested}`."
             )
         }
     })
@@ -580,7 +580,7 @@ mod tests {
     }
 
     #[test]
-    fn codex_response_blocks_simple_command_with_tkn_instruction() {
+    fn codex_response_allows_simple_command_with_tkn_instruction() {
         let input = serde_json::json!({
             "tool_input": {
                 "command": "cargo test"
@@ -591,7 +591,7 @@ mod tests {
         let response = hook_response(&input, true).unwrap();
         assert_eq!(
             response.pointer("/hookSpecificOutput/permissionDecision"),
-            Some(&serde_json::json!("deny"))
+            Some(&serde_json::json!("allow"))
         );
         assert!(response
             .pointer("/hookSpecificOutput/permissionDecisionReason")

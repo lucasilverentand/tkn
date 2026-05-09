@@ -121,7 +121,7 @@ This creates or updates:
 - `tkn exec -- <command>` for deterministic captured output
 - `tkn pass -- <command>` for interactive, long-lived, or streaming commands
 
-Codex does not currently support rewriting `PreToolUse` command input, so the hook blocks bare Bash commands and asks Codex to rerun them through `tkn`.
+Codex does not currently support rewriting `PreToolUse` command input. The hook allows the command and leaves the repo instructions as the source of truth for routing commands through `tkn`; using the hook as a deny-and-retry rewrite shim creates awkward behavior in Codex.
 
 For a repo-local Codex setup instead of the global one, pass `--repo`:
 
