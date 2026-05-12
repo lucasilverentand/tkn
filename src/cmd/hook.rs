@@ -2,9 +2,15 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use chrono::Utc;
+use uuid::Uuid;
+
 use crate::cmd::setup;
 use crate::integration::{content_without_codex_block, resolve_setup_repo_path};
+use crate::optimizer;
 use crate::storage::StorageManager;
+use crate::tool_config;
+use crate::types::{LogEntry, SessionEntry};
 use crate::AssistantTarget;
 
 use super::routing;
@@ -12,6 +18,8 @@ use super::routing;
 pub const TKN_HOOK_COMMAND: &str = "tkn hook run";
 pub const TKN_CODEX_HOOK_COMMAND: &str = "tkn hook run --codex";
 pub const TKN_CODEX_MATCHER: &str = "^Bash$";
+const PRE_TOOL_USE: &str = "PreToolUse";
+const POST_TOOL_USE: &str = "PostToolUse";
 const TKN_MATCHERS: [&str; 2] = ["Bash", "Zsh"];
 
 /// Runs as the hook itself: reads stdin JSON and writes a hook response to stdout.
@@ -202,11 +210,8 @@ fn uninstall_claude_result() -> Result<(), String> {
         };
 
         if let Some(hooks) = settings.get_mut("hooks") {
-            if let Some(pre_tool_use) = hooks.get_mut("PreToolUse") {
-                if let Some(arr) = pre_tool_use.as_array_mut() {
-                    arr.retain(|entry| !is_tkn_hook(entry));
-                }
-            }
+            remove_tkn_hooks_for_event(hooks, PRE_TOOL_USE);
+            remove_tkn_hooks_for_event(hooks, POST_TOOL_USE);
         }
 
         if let Err(e) = write_settings(&settings_path, &settings) {
@@ -250,11 +255,8 @@ fn uninstall_codex_result(repo: Option<&Path>) -> Result<PathBuf, String> {
         let mut settings = read_settings(&hooks_path)?;
 
         if let Some(hooks) = settings.get_mut("hooks") {
-            if let Some(pre_tool_use) = hooks.get_mut("PreToolUse") {
-                if let Some(arr) = pre_tool_use.as_array_mut() {
-                    arr.retain(|entry| !is_tkn_hook(entry));
-                }
-            }
+            remove_tkn_hooks_for_event(hooks, PRE_TOOL_USE);
+            remove_tkn_hooks_for_event(hooks, POST_TOOL_USE);
         }
 
         write_settings(&hooks_path, &settings)
@@ -339,20 +341,18 @@ pub fn repair_hook_settings(settings: &mut serde_json::Value) -> Result<(), Stri
         return Err("settings.json 'hooks' is not an object".to_string());
     };
 
-    let pre_tool_use = hooks_obj
-        .entry("PreToolUse")
-        .or_insert_with(|| serde_json::json!([]));
-
-    let Some(arr) = pre_tool_use.as_array_mut() else {
-        return Err("settings.json 'PreToolUse' is not an array".to_string());
-    };
-
-    arr.retain(|entry| !is_tkn_hook(entry));
-    for matcher in TKN_MATCHERS {
-        arr.push(hook_entry(matcher));
-    }
+    repair_event_hooks(hooks_obj, PRE_TOOL_USE, &TKN_MATCHERS, TKN_HOOK_COMMAND)?;
+    repair_event_hooks(hooks_obj, POST_TOOL_USE, &TKN_MATCHERS, TKN_HOOK_COMMAND)?;
 
     Ok(())
+}
+
+fn remove_tkn_hooks_for_event(hooks: &mut serde_json::Value, event: &str) {
+    if let Some(event_hooks) = hooks.get_mut(event) {
+        if let Some(arr) = event_hooks.as_array_mut() {
+            arr.retain(|entry| !is_tkn_hook(entry));
+        }
+    }
 }
 
 pub fn repair_codex_hook_settings(settings: &mut serde_json::Value) -> Result<(), String> {
@@ -368,28 +368,46 @@ pub fn repair_codex_hook_settings(settings: &mut serde_json::Value) -> Result<()
         return Err("hooks.json 'hooks' is not an object".to_string());
     };
 
-    let pre_tool_use = hooks_obj
-        .entry("PreToolUse")
-        .or_insert_with(|| serde_json::json!([]));
-
-    let Some(arr) = pre_tool_use.as_array_mut() else {
-        return Err("hooks.json 'PreToolUse' is not an array".to_string());
-    };
-
-    arr.retain(|entry| !is_tkn_hook(entry));
-    arr.push(codex_hook_entry());
+    repair_event_hooks(
+        hooks_obj,
+        POST_TOOL_USE,
+        &[TKN_CODEX_MATCHER],
+        TKN_CODEX_HOOK_COMMAND,
+    )?;
 
     Ok(())
 }
 
-pub fn hook_entries_for_matcher<'a>(
+fn repair_event_hooks(
+    hooks_obj: &mut serde_json::Map<String, serde_json::Value>,
+    event: &str,
+    matchers: &[&str],
+    command: &str,
+) -> Result<(), String> {
+    let event_hooks = hooks_obj
+        .entry(event)
+        .or_insert_with(|| serde_json::json!([]));
+
+    let Some(arr) = event_hooks.as_array_mut() else {
+        return Err(format!("hooks '{event}' is not an array"));
+    };
+
+    arr.retain(|entry| !is_tkn_hook(entry));
+    for matcher in matchers {
+        arr.push(hook_entry_for_command(matcher, command));
+    }
+    Ok(())
+}
+
+pub fn hook_entries_for_event_matcher<'a>(
     settings: &'a serde_json::Value,
+    event: &str,
     matcher: &str,
 ) -> Vec<&'a serde_json::Value> {
     settings
         .get("hooks")
-        .and_then(|hooks| hooks.get("PreToolUse"))
-        .and_then(|pre_tool_use| pre_tool_use.as_array())
+        .and_then(|hooks| hooks.get(event))
+        .and_then(|event_hooks| event_hooks.as_array())
         .map(|entries| {
             entries
                 .iter()
@@ -399,13 +417,6 @@ pub fn hook_entries_for_matcher<'a>(
                 .collect()
         })
         .unwrap_or_default()
-}
-
-pub fn codex_hook_entries_for_matcher<'a>(
-    settings: &'a serde_json::Value,
-    matcher: &str,
-) -> Vec<&'a serde_json::Value> {
-    hook_entries_for_matcher(settings, matcher)
 }
 
 pub fn has_expected_hook_command(entry: &serde_json::Value) -> bool {
@@ -468,24 +479,12 @@ pub fn is_tkn_hook(entry: &serde_json::Value) -> bool {
         .unwrap_or(false)
 }
 
-fn hook_entry(matcher: &str) -> serde_json::Value {
+fn hook_entry_for_command(matcher: &str, command: &str) -> serde_json::Value {
     serde_json::json!({
         "matcher": matcher,
         "hooks": [{
             "type": "command",
-            "command": TKN_HOOK_COMMAND
-        }]
-    })
-}
-
-fn codex_hook_entry() -> serde_json::Value {
-    serde_json::json!({
-        "matcher": TKN_CODEX_MATCHER,
-        "hooks": [{
-            "type": "command",
-            "command": TKN_CODEX_HOOK_COMMAND,
-            "timeout": 30,
-            "statusMessage": "Checking tkn routing"
+            "command": command
         }]
     })
 }
@@ -497,19 +496,24 @@ pub fn write_settings(path: &Path, value: &serde_json::Value) -> std::io::Result
 
 fn hook_response(input: &str, codex: bool) -> Option<serde_json::Value> {
     let value: serde_json::Value = serde_json::from_str(input).ok()?;
+    let event = value
+        .pointer("/hook_event_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or(PRE_TOOL_USE);
     let command = value
         .pointer("/tool_input/command")
         .and_then(|v| v.as_str())
         .unwrap_or("");
 
-    if routing::should_skip(command) {
-        return None;
-    }
-
-    if codex {
-        Some(codex_pretooluse_response(command))
-    } else {
-        Some(claude_pretooluse_response(command))
+    match event {
+        PRE_TOOL_USE => {
+            if codex || routing::should_skip(command) {
+                return None;
+            }
+            Some(claude_pretooluse_response(command))
+        }
+        POST_TOOL_USE => post_tool_use_response(&value, command, codex),
+        _ => None,
     }
 }
 
@@ -530,20 +534,214 @@ fn claude_pretooluse_response(command: &str) -> serde_json::Value {
     })
 }
 
-fn codex_pretooluse_response(command: &str) -> serde_json::Value {
-    let suggested = if routing::is_long_lived(command) {
-        format!("tkn pass -- {command}")
+fn post_tool_use_response(
+    value: &serde_json::Value,
+    command: &str,
+    codex: bool,
+) -> Option<serde_json::Value> {
+    if should_skip_post_tool(command) {
+        return None;
+    }
+
+    let tool_response = value.get("tool_response")?;
+    let raw = extract_tool_output(tool_response)?;
+    if already_optimized_by_tkn(&raw.combined) {
+        return None;
+    }
+    let optimized = optimize_captured_tool_output(
+        command,
+        &raw.combined,
+        raw.has_stderr,
+        extract_exit_code(tool_response),
+        value
+            .pointer("/duration_ms")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
+    )?;
+
+    if codex {
+        Some(codex_posttooluse_response(&optimized.content))
     } else {
-        format!("tkn auto -- {command}")
+        Some(claude_posttooluse_response(
+            tool_response,
+            &optimized.content,
+        ))
+    }
+}
+
+fn should_skip_post_tool(command: &str) -> bool {
+    command.is_empty() || command.starts_with("tkn ") || command.trim_start().starts_with('#')
+}
+
+struct CapturedToolOutput {
+    combined: Vec<u8>,
+    has_stderr: bool,
+}
+
+fn extract_tool_output(tool_response: &serde_json::Value) -> Option<CapturedToolOutput> {
+    let stdout = tool_response
+        .get("stdout")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+    let stderr = tool_response
+        .get("stderr")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    if stdout.is_empty() && stderr.is_empty() {
+        return tool_response
+            .get("output")
+            .or_else(|| tool_response.get("text"))
+            .and_then(|value| value.as_str())
+            .filter(|output| !output.is_empty())
+            .map(|output| CapturedToolOutput {
+                combined: output.as_bytes().to_vec(),
+                has_stderr: false,
+            });
+    }
+
+    let mut combined = stdout.as_bytes().to_vec();
+    if !stderr.is_empty() {
+        if !combined.is_empty() && !combined.ends_with(b"\n") {
+            combined.push(b'\n');
+        }
+        combined.extend_from_slice(stderr.as_bytes());
+    }
+
+    Some(CapturedToolOutput {
+        combined,
+        has_stderr: !stderr.is_empty(),
+    })
+}
+
+fn extract_exit_code(tool_response: &serde_json::Value) -> i32 {
+    tool_response
+        .get("exit_code")
+        .or_else(|| tool_response.get("exitCode"))
+        .or_else(|| tool_response.get("code"))
+        .and_then(|value| value.as_i64())
+        .and_then(|code| i32::try_from(code).ok())
+        .unwrap_or(0)
+}
+
+fn already_optimized_by_tkn(raw_output: &[u8]) -> bool {
+    String::from_utf8_lossy(raw_output).contains("for full output run: tkn log ")
+}
+
+struct OptimizedHookOutput {
+    content: String,
+}
+
+fn optimize_captured_tool_output(
+    command: &str,
+    raw_output: &[u8],
+    has_stderr: bool,
+    exit_code: i32,
+    duration_ms: u64,
+) -> Option<OptimizedHookOutput> {
+    let patterns = tool_config::collect_patterns();
+    let config = tool_config::load_tool_config_with_patterns(command, &patterns);
+    let optimize_stderr = config.as_ref().is_some_and(|c| c.optimize.optimize_stderr);
+    let optimized = if has_stderr && !optimize_stderr {
+        optimizer::run_pipeline_no_truncate(raw_output, config.as_ref())
+    } else {
+        optimizer::run_pipeline(raw_output, config.as_ref())
     };
 
+    let saved = optimized
+        .original_bytes
+        .saturating_sub(optimized.optimized_bytes);
+    let meaningful = optimized.was_truncated || (saved > 10 && optimized.original_bytes > 0);
+    if !meaningful {
+        return None;
+    }
+
+    let ref_id = Uuid::new_v4().to_string().replace('-', "")[..8].to_string();
+    let timestamp = Utc::now();
+    let log_entry = LogEntry {
+        ref_id: ref_id.clone(),
+        command: command.to_string(),
+        transformed_command: None,
+        exit_code,
+        raw_bytes: optimized.original_bytes,
+        optimized_bytes: optimized.optimized_bytes,
+        estimated_raw_bytes: None,
+        timestamp,
+        duration_ms,
+    };
+
+    let storage = StorageManager::new();
+    let _ = storage.init();
+    let _ = storage.write_log(&ref_id, raw_output, &log_entry);
+    let _ = storage.update_analytics_with_patterns(&log_entry, &patterns);
+    let session_entry = SessionEntry {
+        ref_id: ref_id.clone(),
+        command: command.to_string(),
+        transformed_command: None,
+        exit_code,
+        raw_bytes: optimized.original_bytes,
+        optimized_bytes: optimized.optimized_bytes,
+        estimated_raw_bytes: None,
+        timestamp,
+        duration_ms,
+    };
+    let _ = storage.append_session_entry(&session_entry);
+    storage.maybe_auto_cleanup();
+
+    Some(OptimizedHookOutput {
+        content: render_optimized_hook_output(&optimized.content, &ref_id, optimized.was_truncated),
+    })
+}
+
+fn render_optimized_hook_output(content: &str, ref_id: &str, was_truncated: bool) -> String {
+    let mut rendered = String::new();
+    if !content.is_empty() {
+        rendered.push_str(content);
+        if !rendered.ends_with('\n') {
+            rendered.push('\n');
+        }
+    }
+
+    let label = if was_truncated {
+        "output truncated and optimized"
+    } else {
+        "output optimized"
+    };
+    rendered.push_str(&format!(
+        "{label}, for full output run: tkn log {ref_id} \"<reason>\""
+    ));
+    rendered
+}
+
+fn claude_posttooluse_response(
+    tool_response: &serde_json::Value,
+    content: &str,
+) -> serde_json::Value {
     serde_json::json!({
         "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": format!(
-                "Route assistant shell commands through tkn. Rerun this command as `{suggested}`."
-            )
+            "hookEventName": POST_TOOL_USE,
+            "updatedToolOutput": {
+                "stdout": content,
+                "stderr": "",
+                "interrupted": tool_response
+                    .get("interrupted")
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(false),
+                "isImage": tool_response
+                    .get("isImage")
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(false)
+            }
+        }
+    })
+}
+
+fn codex_posttooluse_response(content: &str) -> serde_json::Value {
+    serde_json::json!({
+        "decision": "block",
+        "reason": content,
+        "hookSpecificOutput": {
+            "hookEventName": POST_TOOL_USE
         }
     })
 }
@@ -580,7 +778,7 @@ mod tests {
     }
 
     #[test]
-    fn codex_response_blocks_simple_command_with_tkn_instruction() {
+    fn codex_pretooluse_response_is_noop() {
         let input = serde_json::json!({
             "tool_input": {
                 "command": "cargo test"
@@ -588,33 +786,87 @@ mod tests {
         })
         .to_string();
 
-        let response = hook_response(&input, true).unwrap();
-        assert_eq!(
-            response.pointer("/hookSpecificOutput/permissionDecision"),
-            Some(&serde_json::json!("deny"))
-        );
-        assert!(response
-            .pointer("/hookSpecificOutput/permissionDecisionReason")
-            .and_then(|value| value.as_str())
-            .unwrap()
-            .contains("tkn auto -- cargo test"));
+        assert!(hook_response(&input, true).is_none());
     }
 
     #[test]
-    fn codex_response_uses_pass_for_long_lived_commands() {
+    fn claude_posttooluse_response_replaces_large_bash_output() {
+        let output = (1..=600)
+            .map(|idx| format!("line {idx}"))
+            .collect::<Vec<_>>()
+            .join("\n");
         let input = serde_json::json!({
+            "hook_event_name": "PostToolUse",
+            "tool_name": "Bash",
             "tool_input": {
-                "command": "npm run dev"
+                "command": "printf many-lines"
+            },
+            "tool_response": {
+                "stdout": output,
+                "stderr": "",
+                "interrupted": false,
+                "isImage": false
+            }
+        })
+        .to_string();
+
+        let response = hook_response(&input, false).unwrap();
+        let stdout = response
+            .pointer("/hookSpecificOutput/updatedToolOutput/stdout")
+            .and_then(|value| value.as_str())
+            .unwrap();
+        assert!(stdout.contains("output truncated and optimized"));
+        assert!(stdout.contains("tkn log"));
+        assert_eq!(
+            response.pointer("/hookSpecificOutput/updatedToolOutput/stderr"),
+            Some(&serde_json::json!(""))
+        );
+    }
+
+    #[test]
+    fn codex_posttooluse_response_replaces_large_bash_output_with_reason() {
+        let output = (1..=600)
+            .map(|idx| format!("line {idx}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let input = serde_json::json!({
+            "hook_event_name": "PostToolUse",
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "printf many-lines"
+            },
+            "tool_response": {
+                "stdout": output,
+                "stderr": ""
             }
         })
         .to_string();
 
         let response = hook_response(&input, true).unwrap();
+        assert_eq!(response.get("decision"), Some(&serde_json::json!("block")));
         assert!(response
-            .pointer("/hookSpecificOutput/permissionDecisionReason")
+            .get("reason")
             .and_then(|value| value.as_str())
             .unwrap()
-            .contains("tkn pass -- npm run dev"));
+            .contains("output truncated and optimized"));
+    }
+
+    #[test]
+    fn posttooluse_response_skips_output_already_optimized_by_tkn() {
+        let input = serde_json::json!({
+            "hook_event_name": "PostToolUse",
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "git diff"
+            },
+            "tool_response": {
+                "stdout": "small\n",
+                "stderr": "output optimized, for full output run: tkn log abc12345 \"<reason>\""
+            }
+        })
+        .to_string();
+
+        assert!(hook_response(&input, false).is_none());
     }
 
     #[test]
@@ -633,7 +885,7 @@ mod tests {
     fn repair_codex_hook_settings_repairs_duplicate_entries() {
         let mut settings = serde_json::json!({
             "hooks": {
-                "PreToolUse": [
+                "PostToolUse": [
                     {
                         "matcher": "^Bash$",
                         "hooks": [{"type": "command", "command": "tkn hook run --codex"}]
@@ -647,7 +899,7 @@ mod tests {
         });
 
         repair_codex_hook_settings(&mut settings).unwrap();
-        let entries = codex_hook_entries_for_matcher(&settings, TKN_CODEX_MATCHER);
+        let entries = hook_entries_for_event_matcher(&settings, POST_TOOL_USE, TKN_CODEX_MATCHER);
         assert_eq!(entries.len(), 1);
         assert!(has_expected_codex_hook_command(entries[0]));
     }
@@ -661,7 +913,9 @@ mod tests {
 
         let hooks_path = uninstall_codex_result(Some(&repo)).unwrap();
         let settings = read_settings(&hooks_path).unwrap();
-        assert!(codex_hook_entries_for_matcher(&settings, TKN_CODEX_MATCHER).is_empty());
+        assert!(
+            hook_entries_for_event_matcher(&settings, POST_TOOL_USE, TKN_CODEX_MATCHER).is_empty()
+        );
         let agents = fs::read_to_string(repo.join("AGENTS.md")).unwrap();
         assert!(!agents.contains(CODEX_BEGIN_MARKER));
 
@@ -695,10 +949,24 @@ mod tests {
 
         install_for_home(&home).unwrap();
         let settings = read_settings(&settings_path).unwrap();
-        assert_eq!(hook_entries_for_matcher(&settings, "Bash").len(), 1);
-        assert_eq!(hook_entries_for_matcher(&settings, "Zsh").len(), 1);
+        assert_eq!(
+            hook_entries_for_event_matcher(&settings, PRE_TOOL_USE, "Bash").len(),
+            1
+        );
+        assert_eq!(
+            hook_entries_for_event_matcher(&settings, PRE_TOOL_USE, "Zsh").len(),
+            1
+        );
+        assert_eq!(
+            hook_entries_for_event_matcher(&settings, POST_TOOL_USE, "Bash").len(),
+            1
+        );
+        assert_eq!(
+            hook_entries_for_event_matcher(&settings, POST_TOOL_USE, "Zsh").len(),
+            1
+        );
         assert!(has_expected_hook_command(
-            hook_entries_for_matcher(&settings, "Bash")[0]
+            hook_entries_for_event_matcher(&settings, PRE_TOOL_USE, "Bash")[0]
         ));
 
         let _ = fs::remove_dir_all(home);

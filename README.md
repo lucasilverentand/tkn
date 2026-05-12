@@ -73,13 +73,13 @@ This verifies local `~/.tkn` storage, built-in plugin availability, Claude hook 
 
 ### Claude Code (machine-level hook)
 
-Claude uses a PreToolUse hook in `~/.claude/settings.json`:
+Claude uses PreToolUse and PostToolUse hooks in `~/.claude/settings.json`:
 
 ```sh
 tkn setup claude
 ```
 
-This initializes `~/.tkn/` if needed and installs or repairs the `tkn hook run` entry for both Bash and Zsh.
+This initializes `~/.tkn/` if needed and installs or repairs `tkn hook run` entries for Bash and Zsh `PreToolUse` and `PostToolUse`.
 
 To verify or repair later:
 
@@ -114,14 +114,14 @@ When no target is given, the hook CLI installs both Claude and Codex hooks. For 
 This creates or updates:
 
 - `~/.codex/config.toml` with `features.codex_hooks = true`
-- `~/.codex/hooks.json` with a Bash `PreToolUse` hook that runs `tkn hook run --codex`
+- `~/.codex/hooks.json` with a Bash `PostToolUse` hook that runs `tkn hook run --codex`
 - `~/.codex/AGENTS.md` with a managed section that tells Codex to default to:
 
 - `tkn auto -- <command>`
 - `tkn exec -- <command>` for deterministic captured output
 - `tkn pass -- <command>` for interactive, long-lived, or streaming commands
 
-Codex does not currently support rewriting `PreToolUse` command input, so the hook blocks bare Bash commands and asks Codex to rerun them through `tkn`.
+Codex does not currently support rewriting `PreToolUse` command input. The managed instructions are the source of truth for routing commands through `tkn`; the `PostToolUse` hook catches missed bare Bash commands after they run and replaces oversized output with tkn-optimized output.
 
 For a repo-local Codex setup instead of the global one, pass `--repo`:
 
@@ -198,7 +198,7 @@ Each plugin defines flag transforms (adding `--no-pager`, removing `--color=alwa
 | `tkn doctor [claude\|codex\|all] [--json]` | Verify tkn, Claude, and Codex setup |
 | `tkn hook install [claude\|codex\|all] [--repo path]` | Install assistant hooks directly |
 | `tkn hook uninstall [claude\|codex\|all] [--repo path]` | Remove assistant hooks |
-| `tkn hook run --codex` | Run the Codex `PreToolUse` hook mode |
+| `tkn hook run --codex` | Run the Codex hook mode |
 
 ## Writing plugins
 

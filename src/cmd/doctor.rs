@@ -125,7 +125,8 @@ fn doctor_claude_at(home_dir: &Path) -> TargetReport {
     };
 
     for matcher in ["Bash", "Zsh"] {
-        checks.push(check_claude_matcher(&settings, matcher));
+        checks.push(check_claude_matcher(&settings, "PreToolUse", matcher));
+        checks.push(check_claude_matcher(&settings, "PostToolUse", matcher));
     }
 
     TargetReport {
@@ -218,7 +219,11 @@ fn doctor_codex_for_target(
         &target.config_path,
         &target.setup_command,
     ));
-    checks.push(check_codex_hook(&target.hooks_path, &target.setup_command));
+    checks.push(check_codex_hook(
+        &target.hooks_path,
+        &target.setup_command,
+        "PostToolUse",
+    ));
 
     let agents_path = &target.agents_path;
     if !agents_path.exists() {
@@ -319,10 +324,10 @@ fn check_codex_config(config_path: &Path, setup_command: &str) -> CheckResult {
     }
 }
 
-fn check_codex_hook(hooks_path: &Path, setup_command: &str) -> CheckResult {
+fn check_codex_hook(hooks_path: &Path, setup_command: &str, event: &str) -> CheckResult {
     if !hooks_path.exists() {
         return CheckResult::fail(
-            "Codex PreToolUse hook",
+            format!("Codex {event} hook"),
             format!("{} does not exist", hooks_path.display()),
             format!("Run `{setup_command}`."),
         );
@@ -332,14 +337,14 @@ fn check_codex_hook(hooks_path: &Path, setup_command: &str) -> CheckResult {
         Ok(settings) => settings,
         Err(e) => {
             return CheckResult::fail(
-                "Codex PreToolUse hook",
+                format!("Codex {event} hook"),
                 e,
                 format!("Run `{setup_command}`."),
             );
         }
     };
 
-    let entries = hook::codex_hook_entries_for_matcher(&settings, hook::TKN_CODEX_MATCHER);
+    let entries = hook::hook_entries_for_event_matcher(&settings, event, hook::TKN_CODEX_MATCHER);
     let tkn_entries: Vec<_> = entries
         .into_iter()
         .filter(|entry| hook::is_tkn_hook(entry))
@@ -347,7 +352,7 @@ fn check_codex_hook(hooks_path: &Path, setup_command: &str) -> CheckResult {
 
     if tkn_entries.is_empty() {
         return CheckResult::fail(
-            "Codex PreToolUse hook",
+            format!("Codex {event} hook"),
             "missing tkn hook entry",
             format!("Run `{setup_command}`."),
         );
@@ -355,7 +360,7 @@ fn check_codex_hook(hooks_path: &Path, setup_command: &str) -> CheckResult {
 
     if tkn_entries.len() > 1 {
         return CheckResult::fail(
-            "Codex PreToolUse hook",
+            format!("Codex {event} hook"),
             "duplicate tkn hook entries detected",
             format!("Run `{setup_command}`."),
         );
@@ -363,20 +368,20 @@ fn check_codex_hook(hooks_path: &Path, setup_command: &str) -> CheckResult {
 
     if !hook::has_expected_codex_hook_command(tkn_entries[0]) {
         return CheckResult::fail(
-            "Codex PreToolUse hook",
+            format!("Codex {event} hook"),
             "tkn hook entry does not point to `tkn hook run --codex`",
             format!("Run `{setup_command}`."),
         );
     }
 
     CheckResult::pass(
-        "Codex PreToolUse hook",
+        format!("Codex {event} hook"),
         "configured with `tkn hook run --codex`",
     )
 }
 
-fn check_claude_matcher(settings: &serde_json::Value, matcher: &str) -> CheckResult {
-    let entries = hook::hook_entries_for_matcher(settings, matcher);
+fn check_claude_matcher(settings: &serde_json::Value, event: &str, matcher: &str) -> CheckResult {
+    let entries = hook::hook_entries_for_event_matcher(settings, event, matcher);
     let tkn_entries: Vec<_> = entries
         .into_iter()
         .filter(|entry| hook::is_tkn_hook(entry))
@@ -384,7 +389,7 @@ fn check_claude_matcher(settings: &serde_json::Value, matcher: &str) -> CheckRes
 
     if tkn_entries.is_empty() {
         return CheckResult::fail(
-            format!("{matcher} PreToolUse hook"),
+            format!("{matcher} {event} hook"),
             "missing tkn hook entry",
             "Run `tkn setup claude`.",
         );
@@ -392,7 +397,7 @@ fn check_claude_matcher(settings: &serde_json::Value, matcher: &str) -> CheckRes
 
     if tkn_entries.len() > 1 {
         return CheckResult::fail(
-            format!("{matcher} PreToolUse hook"),
+            format!("{matcher} {event} hook"),
             "duplicate tkn hook entries detected",
             "Run `tkn setup claude` to repair duplicate entries.",
         );
@@ -401,7 +406,7 @@ fn check_claude_matcher(settings: &serde_json::Value, matcher: &str) -> CheckRes
     let entry = tkn_entries[0];
     if hook::contains_legacy_hook(entry) {
         return CheckResult::fail(
-            format!("{matcher} PreToolUse hook"),
+            format!("{matcher} {event} hook"),
             "legacy tkn hook entry detected",
             "Run `tkn setup claude` to replace the legacy hook.",
         );
@@ -409,14 +414,14 @@ fn check_claude_matcher(settings: &serde_json::Value, matcher: &str) -> CheckRes
 
     if !hook::has_expected_hook_command(entry) {
         return CheckResult::fail(
-            format!("{matcher} PreToolUse hook"),
+            format!("{matcher} {event} hook"),
             "tkn hook entry does not point to `tkn hook run`",
             "Run `tkn setup claude` to repair the hook command.",
         );
     }
 
     CheckResult::pass(
-        format!("{matcher} PreToolUse hook"),
+        format!("{matcher} {event} hook"),
         "configured with `tkn hook run`",
     )
 }

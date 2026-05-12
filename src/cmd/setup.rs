@@ -271,7 +271,8 @@ mod tests {
             .unwrap()
             .contains("codex_hooks = true"));
         assert_eq!(
-            hook::codex_hook_entries_for_matcher(&hooks, hook::TKN_CODEX_MATCHER).len(),
+            hook::hook_entries_for_event_matcher(&hooks, "PostToolUse", hook::TKN_CODEX_MATCHER)
+                .len(),
             1
         );
 

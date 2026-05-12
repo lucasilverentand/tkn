@@ -165,7 +165,7 @@ enum HookAction {
     },
     /// Run an assistant hook (reads stdin, writes stdout)
     Run {
-        /// Run in Codex PreToolUse mode
+        /// Run in Codex hook mode
         #[arg(long, hide = true)]
         codex: bool,
         /// Extra arguments (ignored, passed by Claude Code)
