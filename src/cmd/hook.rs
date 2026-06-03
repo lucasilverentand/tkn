@@ -370,6 +370,12 @@ pub fn repair_codex_hook_settings(settings: &mut serde_json::Value) -> Result<()
 
     repair_event_hooks(
         hooks_obj,
+        PRE_TOOL_USE,
+        &[TKN_CODEX_MATCHER],
+        TKN_CODEX_HOOK_COMMAND,
+    )?;
+    repair_event_hooks(
+        hooks_obj,
         POST_TOOL_USE,
         &[TKN_CODEX_MATCHER],
         TKN_CODEX_HOOK_COMMAND,
@@ -507,17 +513,17 @@ fn hook_response(input: &str, codex: bool) -> Option<serde_json::Value> {
 
     match event {
         PRE_TOOL_USE => {
-            if codex || routing::should_skip(command) {
+            if routing::should_skip(command) {
                 return None;
             }
-            Some(claude_pretooluse_response(command))
+            Some(pretooluse_rewrite_response(command))
         }
         POST_TOOL_USE => post_tool_use_response(&value, command, codex),
         _ => None,
     }
 }
 
-fn claude_pretooluse_response(command: &str) -> serde_json::Value {
+fn pretooluse_rewrite_response(command: &str) -> serde_json::Value {
     // Pass the original command as a single shell-quoted argument so it
     // survives arg-splitting (e.g. multi-word git commit messages keep their
     // quoting). Single-quote the value, escaping any embedded single quotes.
@@ -778,7 +784,7 @@ mod tests {
     }
 
     #[test]
-    fn codex_pretooluse_response_is_noop() {
+    fn codex_pretooluse_response_rewrites_simple_command() {
         let input = serde_json::json!({
             "tool_input": {
                 "command": "cargo test"
@@ -786,7 +792,11 @@ mod tests {
         })
         .to_string();
 
-        assert!(hook_response(&input, true).is_none());
+        let response = hook_response(&input, true).unwrap();
+        assert_eq!(
+            response.pointer("/hookSpecificOutput/updatedInput/command"),
+            Some(&serde_json::json!("tkn auto -- 'cargo test'"))
+        );
     }
 
     #[test]
@@ -899,9 +909,11 @@ mod tests {
         });
 
         repair_codex_hook_settings(&mut settings).unwrap();
-        let entries = hook_entries_for_event_matcher(&settings, POST_TOOL_USE, TKN_CODEX_MATCHER);
-        assert_eq!(entries.len(), 1);
-        assert!(has_expected_codex_hook_command(entries[0]));
+        for event in [PRE_TOOL_USE, POST_TOOL_USE] {
+            let entries = hook_entries_for_event_matcher(&settings, event, TKN_CODEX_MATCHER);
+            assert_eq!(entries.len(), 1);
+            assert!(has_expected_codex_hook_command(entries[0]));
+        }
     }
 
     #[test]
@@ -913,6 +925,9 @@ mod tests {
 
         let hooks_path = uninstall_codex_result(Some(&repo)).unwrap();
         let settings = read_settings(&hooks_path).unwrap();
+        assert!(
+            hook_entries_for_event_matcher(&settings, PRE_TOOL_USE, TKN_CODEX_MATCHER).is_empty()
+        );
         assert!(
             hook_entries_for_event_matcher(&settings, POST_TOOL_USE, TKN_CODEX_MATCHER).is_empty()
         );
