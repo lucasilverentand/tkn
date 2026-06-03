@@ -113,15 +113,15 @@ When no target is given, the hook CLI installs both Claude and Codex hooks. For 
 
 This creates or updates:
 
-- `~/.codex/config.toml` with `features.codex_hooks = true`
-- `~/.codex/hooks.json` with a Bash `PostToolUse` hook that runs `tkn hook run --codex`
+- `~/.codex/config.toml` with `features.hooks = true`
+- `~/.codex/hooks.json` with Bash `PreToolUse` and `PostToolUse` hooks that run `tkn hook run --codex`
 - `~/.codex/AGENTS.md` with a managed section that tells Codex to default to:
 
 - `tkn auto -- <command>`
 - `tkn exec -- <command>` for deterministic captured output
 - `tkn pass -- <command>` for interactive, long-lived, or streaming commands
 
-Codex does not currently support rewriting `PreToolUse` command input. The managed instructions are the source of truth for routing commands through `tkn`; the `PostToolUse` hook catches missed bare Bash commands after they run and replaces oversized output with tkn-optimized output.
+The `PreToolUse` hook rewrites Bash commands through `tkn auto` before they run. The managed instructions keep Codex aligned with that routing, and the `PostToolUse` hook catches missed bare Bash commands after they run and replaces oversized output with tkn-optimized output.
 
 For a repo-local Codex setup instead of the global one, pass `--repo`:
 

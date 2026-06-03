@@ -222,6 +222,11 @@ fn doctor_codex_for_target(
     checks.push(check_codex_hook(
         &target.hooks_path,
         &target.setup_command,
+        "PreToolUse",
+    ));
+    checks.push(check_codex_hook(
+        &target.hooks_path,
+        &target.setup_command,
         "PostToolUse",
     ));
 
@@ -310,15 +315,15 @@ fn check_codex_config(config_path: &Path, setup_command: &str) -> CheckResult {
 
     if value
         .get("features")
-        .and_then(|features| features.get("codex_hooks"))
+        .and_then(|features| features.get("hooks"))
         .and_then(|enabled| enabled.as_bool())
         == Some(true)
     {
-        CheckResult::pass("Codex hooks feature", "features.codex_hooks is enabled")
+        CheckResult::pass("Codex hooks feature", "features.hooks is enabled")
     } else {
         CheckResult::fail(
             "Codex hooks feature",
-            "features.codex_hooks is not enabled",
+            "features.hooks is not enabled",
             format!("Run `{setup_command}`."),
         )
     }

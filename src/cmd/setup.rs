@@ -179,6 +179,7 @@ fn upsert_codex_hooks_feature(existing: &str) -> String {
     let mut in_features = false;
     let mut features_start = None;
     let mut features_end = lines.len();
+    let mut hooks_line = None;
     let mut codex_hooks_line = None;
 
     for (idx, line) in lines.iter().enumerate() {
@@ -197,7 +198,9 @@ fn upsert_codex_hooks_feature(existing: &str) -> String {
 
         if in_features {
             let key = trimmed.split('=').next().map(str::trim).unwrap_or("");
-            if key == "codex_hooks" {
+            if key == "hooks" {
+                hooks_line = Some(idx);
+            } else if key == "codex_hooks" {
                 codex_hooks_line = Some(idx);
             }
         }
@@ -206,21 +209,23 @@ fn upsert_codex_hooks_feature(existing: &str) -> String {
     if features_start.is_none() {
         let trimmed = normalized.trim_end_matches('\n');
         if trimmed.is_empty() {
-            return "[features]\ncodex_hooks = true\n".to_string();
+            return "[features]\nhooks = true\n".to_string();
         }
-        return format!("{trimmed}\n\n[features]\ncodex_hooks = true\n");
+        return format!("{trimmed}\n\n[features]\nhooks = true\n");
     }
 
     let mut output = Vec::with_capacity(lines.len() + 1);
     let insert_at = features_end;
     for (idx, line) in lines.iter().enumerate() {
-        if Some(idx) == codex_hooks_line {
-            output.push("codex_hooks = true".to_string());
+        if Some(idx) == hooks_line {
+            output.push("hooks = true".to_string());
+        } else if Some(idx) == codex_hooks_line {
+            // Drop the deprecated alias while still allowing insertion below.
         } else {
             output.push((*line).to_string());
         }
-        if codex_hooks_line.is_none() && idx + 1 == insert_at {
-            output.push("codex_hooks = true".to_string());
+        if hooks_line.is_none() && idx + 1 == insert_at {
+            output.push("hooks = true".to_string());
         }
     }
 
@@ -269,7 +274,12 @@ mod tests {
         assert!(codex_block_matches_current(&content));
         assert!(fs::read_to_string(&paths.config_path)
             .unwrap()
-            .contains("codex_hooks = true"));
+            .contains("hooks = true"));
+        assert_eq!(
+            hook::hook_entries_for_event_matcher(&hooks, "PreToolUse", hook::TKN_CODEX_MATCHER)
+                .len(),
+            1
+        );
         assert_eq!(
             hook::hook_entries_for_event_matcher(&hooks, "PostToolUse", hook::TKN_CODEX_MATCHER)
                 .len(),
@@ -348,7 +358,30 @@ mod tests {
         let content = fs::read_to_string(&config_path).unwrap();
         assert!(content.contains("[features]"));
         assert!(content.contains("apps = true"));
-        assert!(content.contains("codex_hooks = true"));
+        assert!(content.contains("hooks = true"));
+        assert!(!content.contains("codex_hooks"));
+        assert!(content.contains("[tools]\nweb_search = true"));
+
+        let _ = fs::remove_dir_all(repo);
+    }
+
+    #[test]
+    fn setup_codex_repo_migrates_deprecated_codex_hooks_feature() {
+        let repo =
+            env::temp_dir().join(format!("tkn-setup-codex-migrate-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        let config_path = hook::codex_config_path(&repo);
+        fs::create_dir_all(config_path.parent().unwrap()).unwrap();
+        fs::write(
+            &config_path,
+            "[features]\napps = true\ncodex_hooks = true\n\n[tools]\nweb_search = true\n",
+        )
+        .unwrap();
+
+        setup_codex_repo(&repo).unwrap();
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("hooks = true"));
+        assert!(!content.contains("codex_hooks"));
         assert!(content.contains("[tools]\nweb_search = true"));
 
         let _ = fs::remove_dir_all(repo);
