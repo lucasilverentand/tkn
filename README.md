@@ -1,3 +1,84 @@
+# Archived: tkn
+
+> [!CAUTION]
+> This project was archived on July 17, 2026. It is no longer maintained and
+> should not be installed. Its automatic shell interception can change command
+> behavior and remove evidence an AI coding agent needs to complete work safely.
+
+## Why it was archived
+
+The original premise was reasonable: verbose shell output consumes agent context,
+and deterministic filtering can reduce that output. Real usage proved that tkn
+could remove a substantial amount of text, but it did not prove that the resulting
+agent runs were cheaper, safer, or more successful.
+
+A final audit of the actual installation found:
+
+- Across 26,492 commands, measured output fell from 274,075,790 bytes to
+  139,614,829 bytes: a real reduction of 49.1%.
+- `tkn stats` reported 67.2% because it substituted estimated pre-transform byte
+  counts for measured output. Those estimates were not token counts or billed
+  provider usage.
+- In the retained 48-hour sample of 612 commands, at least 29 valid `rg --glob`
+  commands were changed into invalid commands by inserting new flags between an
+  option and its value. The same heuristic also broke valid `git -C <path>`
+  commands.
+- Line-based caps were not a reliable context bound. One 58 MB `grep` result was
+  reduced by only 22 bytes because a small number of extremely long lines passed
+  through the line limit.
+- File-reading rules could silently remove source context: `cat` kept only the
+  final 200 lines and `sed` only the final 100 lines.
+- Raw command output was persisted by default for 48 hours. On the audited macOS
+  installation, the logs were readable as `0644` files inside `0755` directories,
+  which is not an acceptable default for output that may contain credentials.
+- The test suite passed while these failures were occurring because it checked
+  filter behavior, not semantic equivalence of transformed commands or end-to-end
+  task success.
+
+The surrounding ecosystem also moved on:
+
+- [RTK](https://github.com/rtk-ai/rtk) became the established implementation of
+  this product category, with broader command and agent support and an active
+  maintainer community. Maintaining a second, less safe shell proxy no longer
+  had a credible purpose.
+- Codex added native [lifecycle hooks](https://learn.chatgpt.com/docs/hooks) and a
+  configurable [`tool_output_token_limit`](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml),
+  reducing the need for a global proxy while still leaving interception coverage
+  explicitly platform-dependent.
+- The July 2026 study
+  [*Token Reduction Is Not Cost Reduction*](https://arxiv.org/abs/2607.12161)
+  found that removing tool-output tokens did not reliably reduce billed cost and
+  could harm completion by deleting action-critical evidence. Its conservative
+  RTK arm showed only a small, holdout-unconfirmed saving, while a more aggressive
+  compression arm cost more.
+
+The conclusion is therefore narrower than "output compression never helps."
+Compression ratio alone is not a valid product outcome. Any future work in this
+area should preserve command semantics, protect verbatim evidence, cap bytes or
+tokens rather than only lines, default to private storage, and measure paired
+end-to-end task success and billed cost.
+
+## Removing an existing installation
+
+Uninstall the managed hooks before deleting the binary:
+
+```sh
+tkn hook uninstall all
+rm -f ~/.cargo/bin/tkn /usr/local/bin/tkn
+rm -rf ~/.tkn
+```
+
+Review the affected assistant configuration afterward and preserve unrelated
+hooks. No migration or compatibility support is provided by this archived
+repository.
+
+---
+
+## Historical documentation
+
+The original README is preserved below as a record of the project. Its install
+and setup instructions are obsolete.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://github.com/lucasilverentand/tkn/raw/main/.github/logo-dark.svg">
