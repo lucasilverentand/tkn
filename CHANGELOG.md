@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.5](https://github.com/lucasilverentand/tkn/compare/v0.6.4...v0.6.5) (2026-07-17)
+
+
+### Features
+
+* integrate native Codex hook rewrites ([#48](https://github.com/lucasilverentand/tkn/issues/48)) ([6f45c45](https://github.com/lucasilverentand/tkn/commit/6f45c450bdd23472489698002c70884970b67bbe))
+* optimize missed assistant output post-tool ([232b6ef](https://github.com/lucasilverentand/tkn/commit/232b6ef261679004abe0e34fea95b644788a2b6b))
+* optimize missed hook output post-tool ([b75389c](https://github.com/lucasilverentand/tkn/commit/b75389ce3121533219cfc80ae907bb02fb0f6512))
+
 ## [0.6.4](https://github.com/lucasilverentand/tkn/compare/v0.6.3...v0.6.4) (2026-05-07)
 
 
